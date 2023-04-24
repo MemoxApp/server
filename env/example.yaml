@@ -1,0 +1,24 @@
+app:
+  addr: ":3000"
+  host: "timespeak.runs.fun"
+  prefix: "/api"
+db:
+  mongo_addr: "localhost:27017"
+  mongo_db: "timespeak"
+  redis_addr: "localhost:6379"
+  redis_db: 0
+debug: true
+user:
+  token_expire: 43200 # 30 * 24 * 60
+  token_secret: "PLeAseSEtaRaDoMS#cret" # do not use the default secret
+mail:
+  code_expire: 10
+  code_length: 6
+  code_cool_down: 1
+  smtp_mail_host: "smtp.exmail.qq.com"
+  smtp_mail_port: 465
+  smtp_mail_user: "no_reply@example.com"
+  smtp_mail_pwd: "PASSWORD"
+  smtp_mail_nickname: "时光语"
+  subject: "【时光语】邮箱验证提醒"
+  template: "env/template.html"
