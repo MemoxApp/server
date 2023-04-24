@@ -1,0 +1,22 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type Query
+
+type Mutation
+
+scalar DateTime
+
+
+"权限控制"
+directive @auth on FIELD_DEFINITION | OBJECT
+
+"仅用于代码生成时强制单独resolver"
+directive @goField(
+    forceResolver: Boolean
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION

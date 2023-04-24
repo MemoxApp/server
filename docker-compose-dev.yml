@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:5.0.2
+    volumes:
+      - ./data/mongo:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - MONGO_INITDB_DATABASE=timespeak
+    container_name: timespeak_dev_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - timespeak-dev
+  redis:
+    image: redis:6.2.5
+    ports:
+      - "6379:6379"
+    environment:
+      - TZ=Asia/Shanghai
+    container_name: timespeak_dev_redis
+    volumes:
+      - ./data/redis:/data
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    networks:
+      - timespeak-dev
+networks:
+  timespeak-dev:
+    driver: bridge
+#    attachable: true

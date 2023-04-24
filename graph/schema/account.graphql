@@ -1,0 +1,53 @@
+extend type Mutation {
+    register(input:RegisterInput!):RegisterPayload!
+    "发送邮箱验证码"
+    sendEmailCode(input: SendEmailCodeInput!): SendCodePayload!
+}
+
+extend type Query {
+    login(input:LoginInput!):LoginPayload!
+}
+
+input RegisterInput {
+    username: String!
+    email: String!
+    password: String!
+    email_verify_code: String!
+}
+
+type RegisterPayload {
+    id: ID!
+}
+
+input LoginInput {
+    username: String!
+    password: String!
+}
+
+type LoginPayload {
+    id: ID!
+    token: String!
+    permission: Int!
+    expire: DateTime!
+}
+
+
+input SendEmailCodeInput {
+    mail: String!
+}
+
+type SendCodePayload {
+    success: Boolean!
+}
+
+"账号信息"
+type Account {
+    "用户ID"
+    id: ID!
+    "注册时间"
+    create_time: DateTime!
+    "用户名"
+    username: String!
+    "头像URL"
+    avatar: String!
+}

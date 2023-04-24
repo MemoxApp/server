@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh">
+<meta content="text/html; charset=utf-8" http-equiv="content-type">
+<style>
+    p {
+        margin: 1em 0;
+    }
+
+    .container {
+        width: fit-content;
+        padding: 20px 30px;
+        background: #ffffff;
+        border-radius: 4px;
+        margin: auto;
+        text-align: center;
+    }
+
+    .welcome {
+        font-family: Roboto, serif;
+        font-size: 20px;
+        color: #779eff;
+    }
+
+    .hint {
+        font-family: Roboto, serif;
+        font-size: 16px;
+        text-align: center;
+        color: #000000;
+    }
+
+    .code-box {
+        background: #f1f1f1;
+        border-radius: 4px;
+        width: 224px;
+        margin: auto;
+        line-height: 55px;
+        text-align: center;
+    }
+
+    .code {
+        font-family: Roboto, serif;
+        font-size: 20px;
+        color: #3770ff;
+        letter-spacing: 0.1em;
+    }
+
+    .notice {
+        font-family: Roboto, serif;
+        font-size: 16px;
+        text-align: center;
+        color: #888888;
+    }
+
+    .powered-by {
+        margin: auto;
+        margin-top: 100px;
+        text-align: center;
+        font-size: 12px;
+        color: #888888;
+    }
+
+    .powered-by img {
+        width: 1.2em;
+        height: 1.2em;
+        position: relative;
+        top: 2px;
+    }
+</style>
+
+<div class="container">
+    <p class="welcome">感谢使用时光语 TimeSpeak</p>
+    <p class="hint">
+        您的账号正在使用邮箱验证，<br/>
+        本次请求的验证码为：
+    </p>
+    <div class="code-box">
+    <span class="code">
+      ${code}
+    </span>
+    </div>
+    <p class="notice">
+        ${code_expire}分钟内有效，请不要外传。<br/>
+        若此操作非本人进行，请忽略此邮件。
+    </p>
+
+    <div class="powered-by">
+        <span>Powered by runs.fun</span>
+    </div>
+</div>
+
+</html>

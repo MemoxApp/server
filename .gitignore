@@ -1,0 +1,6 @@
+/env/dev.yaml
+/data/
+/.idea/
+/test/
+/src/config/logs/
+/logs/
