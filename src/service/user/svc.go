@@ -32,7 +32,7 @@ func NewUserSvc(conf Config, db *mongo.Database, r *redis.Client) *Svc {
 }
 
 // AddUser 添加用户 返回用户ID
-func (s *Svc) AddUser(ctx context.Context, username, password string) (primitive.ObjectID, error) {
+func (s *Svc) AddUser(ctx context.Context, username, password, mail string) (primitive.ObjectID, error) {
 	p, err := EncryptPassword(password)
 	if err != nil {
 		return primitive.NilObjectID, err
@@ -42,6 +42,7 @@ func (s *Svc) AddUser(ctx context.Context, username, password string) (primitive
 		ObjectID:   primitive.NewObjectID(),
 		Username:   username,
 		Password:   p,
+		Mail:       mail,
 		CreateTime: time.Now().Unix(),
 	}
 
@@ -70,6 +71,12 @@ func (s *Svc) GetUser(ctx context.Context, id primitive.ObjectID) (u User, err e
 // GetUserByUsername 通过用户名获取用户
 func (s *Svc) GetUserByUsername(ctx context.Context, username string) (u User, err error) {
 	err = s.m.FindOne(ctx, bson.M{"username": username}).Decode(&u)
+	return
+}
+
+// GetUserByMail 通过邮箱获取用户
+func (s *Svc) GetUserByMail(ctx context.Context, mail string) (u User, err error) {
+	err = s.m.FindOne(ctx, bson.M{"mail": mail}).Decode(&u)
 	return
 }
 

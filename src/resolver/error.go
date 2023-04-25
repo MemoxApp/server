@@ -8,6 +8,7 @@ import (
 var (
 	errUsernameInvalid  = gqlError("用户名不合法", "USERNAME_INVALID")
 	errUsernameOccupied = gqlError("用户名已被使用", "USERNAME_OCCUPIED")
+	errMailOccupied     = gqlError("邮箱已被使用", "MAIL_OCCUPIED")
 
 	errVerifyCodeWrong         = gqlError("验证码错误", "VERIFY_CODE_WRONG")
 	errUsernameOrPasswordWrong = gqlError("用户名或密码错误", "USERNAME_OR_PASSWORD_WRONG")

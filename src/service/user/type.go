@@ -10,6 +10,7 @@ import (
 type User struct {
 	ObjectID           primitive.ObjectID `bson:"_id"`                  // 用户ID
 	Username           string             `bson:"username"`             // 用户名
+	Mail               string             `bson:"mail"`                 // 用户名
 	Password           string             `bson:"password"`             // 密码（BCrypt）
 	Avatar             string             `bson:"avatar"`               // 头像URL
 	CreateTime         int64              `bson:"create_time"`          // 注册时间

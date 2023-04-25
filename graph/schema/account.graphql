@@ -1,11 +1,10 @@
 extend type Mutation {
-    register(input:RegisterInput!):RegisterPayload!
-    "发送邮箱验证码"
-    sendEmailCode(input: SendEmailCodeInput!): SendCodePayload!
-}
-
-extend type Query {
+    "登录"
     login(input:LoginInput!):LoginPayload!
+    "注册新用户"
+    register(input:RegisterInput!):ID!
+    "发送邮箱验证码"
+    sendEmailCode(input: SendEmailCodeInput!): Boolean!
 }
 
 input RegisterInput {
@@ -13,10 +12,6 @@ input RegisterInput {
     email: String!
     password: String!
     email_verify_code: String!
-}
-
-type RegisterPayload {
-    id: ID!
 }
 
 input LoginInput {
@@ -34,10 +29,6 @@ type LoginPayload {
 
 input SendEmailCodeInput {
     mail: String!
-}
-
-type SendCodePayload {
-    success: Boolean!
 }
 
 "账号信息"

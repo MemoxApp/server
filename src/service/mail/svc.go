@@ -105,3 +105,27 @@ func (s *Svc) sendVerifyCode(address string, code string) (err error) {
 	err = s.sendMail(address, s.Subject, body)
 	return
 }
+
+func (s *Svc) CheckEmailVerifyCode(ctx context.Context, email, code string) bool {
+	result, err := s.checkVerifyCode(ctx, email, code)
+	if err != nil {
+		log.Error("error in checking email code", "email", email, "err", err)
+	}
+	return result
+}
+
+func (s *Svc) checkVerifyCode(ctx context.Context, id, c string) (bool, error) {
+	code := Code{ID: id}
+	result, err := s.redis.Get(ctx, codeKey(id)).Result()
+	if err == redis.Nil {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	err = json.Unmarshal([]byte(result), &code)
+	if err != nil {
+		return false, err
+	}
+	return c == code.Code, nil
+}

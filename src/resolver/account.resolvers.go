@@ -6,33 +6,48 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/service/mail"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, input generated.RegisterInput) (*generated.RegisterPayload, error) {
-	panic(fmt.Errorf("not implemented: Register - register"))
+func (r *mutationResolver) Register(ctx context.Context, input generated.RegisterInput) (string, error) {
+	if r.mailSvc.CheckEmailVerifyCode(ctx, input.Email, input.EmailVerifyCode) {
+		_, err := r.userSvc.GetUserByMail(ctx, input.Email)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				// 未注册
+				id, err := r.userSvc.AddUser(ctx, input.Username, input.Password, input.Email)
+				if err != nil {
+					return "", err
+				}
+				return id.Hex(), nil
+			} else {
+				return "", err
+			}
+		}
+		return "", errMailOccupied
+	}
+	return "", errVerifyCodeWrong
 }
 
 // SendEmailCode is the resolver for the sendEmailCode field.
-func (r *mutationResolver) SendEmailCode(ctx context.Context, input generated.SendEmailCodeInput) (*generated.SendCodePayload, error) {
+func (r *mutationResolver) SendEmailCode(ctx context.Context, input generated.SendEmailCodeInput) (bool, error) {
 	err := r.mailSvc.NewEmailVerifyCode(ctx, input.Mail)
 	if err != nil {
 		if err == mail.ErrVerifyCodeCoolDown {
-			return nil, errTooManyRequest
+			return false, errTooManyRequest
 		} else {
-			return nil, internalError(err)
+			return false, internalError(err)
 		}
 	}
-	return &generated.SendCodePayload{
-		Success: true,
-	}, nil
+	return true, nil
 }
 
 // Login is the resolver for the login field.
-func (r *queryResolver) Login(ctx context.Context, input generated.LoginInput) (*generated.LoginPayload, error) {
+func (r *mutationResolver) Login(ctx context.Context, input generated.LoginInput) (*generated.LoginPayload, error) {
 	match, err := r.userSvc.CheckPasswordByUsername(ctx, input.Username, input.Password)
 	if err != nil {
 		return nil, internalError(err)
