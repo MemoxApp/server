@@ -333,8 +333,8 @@ type Account {
 #
 # https://gqlgen.com/getting-started/
 schema {
-  query: Query
-  mutation: Mutation
+    query: Query
+    mutation: Mutation
 }
 
 type Query
@@ -349,7 +349,7 @@ directive @auth on FIELD_DEFINITION | OBJECT
 
 "仅用于代码生成时强制单独resolver"
 directive @goField(
-  forceResolver: Boolean
+    forceResolver: Boolean
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)

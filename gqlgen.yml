@@ -14,7 +14,7 @@ model:
 # Where should the resolver implementations go?
 resolver:
   layout: follow-schema
-  dir: graph/resolver
+  dir: src/resolver
   package: resolver
 
 autobind:
