@@ -1,0 +1,46 @@
+extend type Query {
+    "用户的所有Resources，按创建时间排序，默认降序"
+    allResources(
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[Resource]!
+}
+
+extend type Mutation {
+    addResource(input: ResourceInput!): UploadTokenPayload!
+    archiveResource(input: ID!): Boolean!
+    deleteResource(input: ID!): Boolean!
+}
+
+type Resource {
+    "Resource ID"
+    id: ID!
+    "资源路径"
+    path: String!
+    "创建用户"
+    user: User!
+    "大小(Byte)"
+    size: Int!
+    "引用该资源的 Memories"
+    memories: [Memory]!
+    "是否已归档"
+    archived: Boolean!
+    "创建时间"
+    create_time: DateTime!
+}
+
+input ResourceInput {
+    "文件名"
+    file_name: String!
+}
+
+
+type UploadTokenPayload {
+    "上传凭证"
+    token: String!
+    "相对路径"
+    path: String!
+    "URL"
+    url: String!
+}

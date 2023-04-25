@@ -1,0 +1,37 @@
+extend type Query {
+    "所有HashTags，按修改时间排序，默认降序"
+    allHashTags(
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[HashTag]!
+    "指定 HashTag 下的所有帖子"
+    hashTags(input: ID!): [Memory]!
+}
+
+extend type Mutation {
+    updateHashTag(input: HashTagInput!): Boolean!
+    deleteHashTag(input: ID!): Boolean!
+}
+
+type HashTag {
+    "HashTag ID"
+    id: ID!
+    "Memory ID"
+    memory_id: ID!
+    "创建用户"
+    user: User!
+    "Tag名称"
+    name: String!
+    "是否已归档"
+    archived: Boolean!
+    "创建时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input HashTagInput {
+    "名称"
+    name: String!
+}

@@ -1,0 +1,25 @@
+extend type Query {
+    """查看指定Memory的所有历史修改记录，降序
+    历史记录在删除Memory时会随之删除
+    """
+    allHistories(
+        id: ID!,
+        page: Int!,
+        size: Int!,
+    ):[History]!
+}
+
+type History {
+    "History ID"
+    id: ID!
+    "Memory ID"
+    memory_id: ID!
+    "创建用户"
+    user: User!
+    "标题"
+    title: String!
+    "内容"
+    content: String!
+    "发布时间"
+    create_time: DateTime!
+}

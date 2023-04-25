@@ -12,7 +12,6 @@ type Mutation
 
 scalar DateTime
 
-
 "权限控制"
 directive @auth on FIELD_DEFINITION | OBJECT
 

@@ -7,8 +7,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time_speak_server/graph/generated"
-	"time_speak_server/graph/resolver"
 	"time_speak_server/src/config"
+	"time_speak_server/src/resolver"
 )
 
 func GraphqlHandler(conf config.Config, db *mongo.Database, redis *redis.Client) gin.HandlerFunc {

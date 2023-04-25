@@ -1,0 +1,52 @@
+extend type Query {
+    "所有Memories，按修改时间排序，默认降序"
+    allMemories(
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[Memory]!
+    "所有Memories，按创建时间排序，默认降序"
+    allMemoriesByCreated(page:Int!,size:Int!,desc:Boolean!=true):[Memory]!
+    "所有的归档Memories，按归档时间(update_time)排序，默认降序"
+    archivedMemories(
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[Memory]!
+    "Memory 详情"
+    memory(input: ID!): Memory!
+}
+
+extend type Mutation {
+    addMemory(input: AddMemoryInput!): ID!
+    updateMemory(input: AddMemoryInput!): Boolean!
+    "归档Memory"
+    archiveMemory(input: ID!): Boolean!
+    "彻底删除Memory(只有已归档的Memory可以被删除)"
+    deleteMemory(input: ID!): Boolean!
+}
+
+type Memory {
+    "Memory ID"
+    id: ID!
+    "创建用户"
+    user: User!
+    "标题"
+    title: String!
+    "内容"
+    content: String!
+    hashtags: [HashTag]!
+    "是否已归档"
+    archived: Boolean!
+    "发布时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input AddMemoryInput {
+    "标题"
+    title: String!
+    "内容"
+    content: String!
+}

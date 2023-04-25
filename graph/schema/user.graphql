@@ -1,0 +1,24 @@
+extend type Query {
+    currentUser:User!
+}
+
+type User {
+    "用户ID"
+    id: ID!
+    "用户名"
+    username: String!
+    "头像URL"
+    avatar: String!
+    "邮箱"
+    mail: String!
+    "上次登录时间"
+    login_time: DateTime!
+    "注册时间"
+    create_time: DateTime!
+    "权限"
+    permission: Int!
+    "已使用资源(Byte)"
+    used: Int!
+    "订阅"
+    subscribe: Subscribe!
+}

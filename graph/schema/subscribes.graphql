@@ -1,0 +1,34 @@
+extend type Query {
+    "所有Subscribes"
+    allSubscribes:[Subscribe]!
+}
+
+extend type Mutation {
+    addSubscribe(input: SubscribeInput!): ID!
+    updateSubscribe(input: SubscribeInput!): Boolean!
+    deleteSubscribe(input: ID!): Boolean!
+}
+
+type Subscribe {
+    "Subscribe ID"
+    id: ID!
+    "订阅名称"
+    name: ID!
+    "资源额度(Byte)"
+    capacity: Int!
+    "是否启用"
+    available: String!
+    "创建时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input SubscribeInput {
+    "订阅名称"
+    name: ID!
+    "资源额度(Byte)"
+    capacity: Int!
+    "是否启用"
+    available: String!
+}

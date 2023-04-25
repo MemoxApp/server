@@ -1,0 +1,39 @@
+extend type Query {
+    "帖子的所有Comments，按创建时间排序，默认降序"
+    allComments(
+        id: ID!,
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[Comment]!
+    "Comment 的所有子回复"
+    comments(input: ID!): [Comment]!
+}
+
+extend type Mutation {
+    addComment(input: CommentInput!): ID!
+    updateComment(input: CommentInput!): Boolean!
+    deleteComment(input: ID!): Boolean!
+}
+
+type Comment {
+    "Comment ID"
+    id: ID!
+    "Memory ID"
+    memory_id: ID!
+    "创建用户"
+    user: User!
+    "内容"
+    content: String!
+    "是否已归档"
+    archived: Boolean!
+    "发布时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input CommentInput {
+    "内容"
+    content: String!
+}
