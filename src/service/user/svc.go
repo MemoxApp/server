@@ -17,7 +17,7 @@ type (
 		Config
 		m     *mongo.Collection
 		redis *redis.Client
-		c     cache.Svc
+		c     *cache.Svc
 	}
 	Option func(bson.M) bson.M
 )
