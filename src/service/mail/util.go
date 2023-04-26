@@ -20,14 +20,15 @@ func randomNumberStr(length int) string {
 	return fmt.Sprintf("%06d", result)
 }
 
-func newCode(id string, length int) Code {
+func newCode(id, act string, length int) Code {
 	return Code{
 		ID:   id,
+		Act:  act,
 		Code: randomNumberStr(length),
 	}
 }
 
-func codeKey(id string) string {
+func CodeKey(id string) string {
 	return fmt.Sprintf(keyVerifyCode, id)
 }
 

@@ -2,18 +2,6 @@
 
 package generated
 
-// 账号信息
-type Account struct {
-	// 用户ID
-	ID string `json:"id"`
-	// 注册时间
-	CreateTime int64 `json:"create_time"`
-	// 用户名
-	Username string `json:"username"`
-	// 头像URL
-	Avatar string `json:"avatar"`
-}
-
 type AddMemoryInput struct {
 	// 标题
 	Title string `json:"title"`
@@ -41,6 +29,13 @@ type Comment struct {
 type CommentInput struct {
 	// 内容
 	Content string `json:"content"`
+}
+
+type ForgetInput struct {
+	Email string `json:"email"`
+	// 新密码
+	Password        string `json:"password"`
+	EmailVerifyCode string `json:"email_verify_code"`
 }
 
 type HashTag struct {
@@ -140,7 +135,8 @@ type ResourceInput struct {
 }
 
 type SendEmailCodeInput struct {
-	Mail string `json:"mail"`
+	Mail     string `json:"mail"`
+	Register bool   `json:"register"`
 }
 
 type Subscribe struct {

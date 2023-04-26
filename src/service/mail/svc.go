@@ -60,7 +60,7 @@ func NewMailSvc(conf Config, redis *redis.Client) *Svc {
 }
 
 // NewEmailVerifyCode 创建邮箱验证码
-func (s *Svc) NewEmailVerifyCode(ctx context.Context, email string) error {
+func (s *Svc) NewEmailVerifyCode(ctx context.Context, email, act string) error {
 	err := s.redis.Get(ctx, coolDownKey(email)).Err()
 	if err != nil && err != redis.Nil {
 		return err
@@ -69,12 +69,12 @@ func (s *Svc) NewEmailVerifyCode(ctx context.Context, email string) error {
 		return ErrVerifyCodeCoolDown
 	}
 
-	code := newCode(email, s.CodeLength)
+	code := newCode(email, act, s.CodeLength)
 	jsonStr, err := json.Marshal(code)
 	if err != nil {
 		return err
 	}
-	err = s.redis.Set(ctx, codeKey(email), string(jsonStr), time.Duration(s.CodeExpire)*time.Minute).Err()
+	err = s.redis.Set(ctx, CodeKey(email), string(jsonStr), time.Duration(s.CodeExpire)*time.Minute).Err()
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (s *Svc) NewEmailVerifyCode(ctx context.Context, email string) error {
 		return err
 	}
 
-	return s.sendVerifyCode(email, code.Code)
+	return s.sendVerifyCode(email, code.Act, code.Code)
 }
 
 func (s *Svc) sendMail(address string, subject, body string) (err error) {
@@ -99,9 +99,10 @@ func (s *Svc) sendMail(address string, subject, body string) (err error) {
 	return
 }
 
-func (s *Svc) sendVerifyCode(address string, code string) (err error) {
+func (s *Svc) sendVerifyCode(address string, act string, code string) (err error) {
 	body := strings.ReplaceAll(s.template, "${code}", code)
 	body = strings.ReplaceAll(body, "${code_expire}", strconv.Itoa(s.CodeExpire))
+	body = strings.ReplaceAll(body, "${act}", act)
 	err = s.sendMail(address, s.Subject, body)
 	return
 }
@@ -116,7 +117,7 @@ func (s *Svc) CheckEmailVerifyCode(ctx context.Context, email, code string) bool
 
 func (s *Svc) checkVerifyCode(ctx context.Context, id, c string) (bool, error) {
 	code := Code{ID: id}
-	result, err := s.redis.Get(ctx, codeKey(id)).Result()
+	result, err := s.redis.Get(ctx, CodeKey(id)).Result()
 	if err == redis.Nil {
 		return false, nil
 	}

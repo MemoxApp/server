@@ -3,6 +3,8 @@ extend type Mutation {
     login(input:LoginInput!):LoginPayload!
     "注册新用户"
     register(input:RegisterInput!):ID!
+    "找回密码"
+    forget(input:ForgetInput!):Boolean!
     "发送邮箱验证码"
     sendEmailCode(input: SendEmailCodeInput!): Boolean!
 }
@@ -10,6 +12,12 @@ extend type Mutation {
 input RegisterInput {
     username: String!
     email: String!
+    password: String!
+    email_verify_code: String!
+}
+input ForgetInput {
+    email: String!
+    "新密码"
     password: String!
     email_verify_code: String!
 }
@@ -29,16 +37,5 @@ type LoginPayload {
 
 input SendEmailCodeInput {
     mail: String!
-}
-
-"账号信息"
-type Account {
-    "用户ID"
-    id: ID!
-    "注册时间"
-    create_time: DateTime!
-    "用户名"
-    username: String!
-    "头像URL"
-    avatar: String!
+    register: Boolean!
 }
