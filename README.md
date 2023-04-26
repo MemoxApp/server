@@ -21,10 +21,10 @@ Talk to time, talk to self.
 - [x] 架构设计
 - [x] 登录注册
 - [ ] Memory
+- [ ] HashTag
 - [ ] Comment
 - [ ] History
 - [ ] Subscribe
 - [ ] Admin
 - [ ] User
 - [ ] Resource
-- [ ] HashTag
