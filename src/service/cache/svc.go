@@ -7,23 +7,18 @@ import (
 )
 
 type (
-	Svc interface {
-		Get(ctx context.Context, key string, ttl time.Duration, f func() ([]byte, error)) ([]byte, error)
-		Del(ctx context.Context, key string)
-	}
-
-	defaultCacheSvc struct {
+	Svc struct {
 		r *redis.Client
 	}
 )
 
-func NewCacheSvc(redis *redis.Client) Svc {
-	return &defaultCacheSvc{
+func NewCacheSvc(redis *redis.Client) *Svc {
+	return &Svc{
 		r: redis,
 	}
 }
 
-func (s *defaultCacheSvc) Get(ctx context.Context, key string, ttl time.Duration, f func() ([]byte, error)) ([]byte, error) {
+func (s *Svc) Get(ctx context.Context, key string, ttl time.Duration, f func() ([]byte, error)) ([]byte, error) {
 	result := s.r.Get(ctx, key)
 	if result.Err() != nil {
 		data, err := f()
@@ -38,6 +33,6 @@ func (s *defaultCacheSvc) Get(ctx context.Context, key string, ttl time.Duration
 	}
 }
 
-func (s *defaultCacheSvc) Del(ctx context.Context, key string) {
+func (s *Svc) Del(ctx context.Context, key string) {
 	s.r.Del(ctx, key)
 }
