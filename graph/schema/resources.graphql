@@ -4,13 +4,13 @@ extend type Query {
         page: Int!,
         size: Int!,
         desc: Boolean! = true
-    ):[Resource]!
+    ):[Resource]! @auth
 }
 
 extend type Mutation {
-    addResource(input: ResourceInput!): UploadTokenPayload!
-    archiveResource(input: ID!): Boolean!
-    deleteResource(input: ID!): Boolean!
+    addResource(input: ResourceInput!): UploadTokenPayload! @auth
+    archiveResource(input: ID!): Boolean! @auth
+    deleteResource(input: ID!): Boolean! @auth
 }
 
 type Resource {

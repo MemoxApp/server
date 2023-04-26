@@ -1,5 +1,5 @@
 extend type Query {
-    currentUser:User!
+    currentUser:User! @auth
 }
 
 type User {

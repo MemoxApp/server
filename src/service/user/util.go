@@ -1,7 +1,10 @@
 package user
 
 import (
+	"context"
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/golang-jwt/jwt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,6 +33,19 @@ func ComparePassword(hash string, password string) (bool, error) {
 func GenerateJWTToken(claims JWTClaims, secret string) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return t.SignedString([]byte(secret))
+}
+
+// GetUserFromJwt 从token中获取用户信息
+func GetUserFromJwt(c context.Context) (myID primitive.ObjectID, err error) {
+	authInfo := GetJWTClaims(c)
+	myID, err = primitive.ObjectIDFromHex(authInfo.ID)
+	return
+}
+
+// GetJWTClaims 获得JWTClaims
+func GetJWTClaims(c context.Context) Info {
+	info, _ := graphql.GetOperationContext(c).Stats.GetExtension("Auth").(Info)
+	return info
 }
 
 // ParseJWTToken 解析token

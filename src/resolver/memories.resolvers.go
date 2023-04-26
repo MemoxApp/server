@@ -8,11 +8,24 @@ import (
 	"context"
 	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
 )
 
 // AddMemory is the resolver for the addMemory field.
 func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMemoryInput) (string, error) {
-	panic(fmt.Errorf("not implemented: AddMemory - addMemory"))
+	// @auth
+	if len(input.Content) == 0 {
+		return "", exception.ErrContentEmpty
+	}
+	tags, err := r.hashtagSvc.MakeHashTags(ctx, input.Content)
+	if err != nil {
+		return "", err
+	}
+	memory, err := r.memorySvc.NewMemory(ctx, input.Title, input.Content, tags)
+	if err != nil {
+		return "", err
+	}
+	return memory, nil
 }
 
 // UpdateMemory is the resolver for the updateMemory field.

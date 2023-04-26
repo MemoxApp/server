@@ -4,14 +4,14 @@ extend type Query {
         page: Int!,
         size: Int!,
         desc: Boolean! = true
-    ):[HashTag]!
+    ):[HashTag]! @auth
     "指定 HashTag 下的所有帖子"
-    hashTags(input: ID!): [Memory]!
+    hashTags(input: ID!): [Memory]! @auth
 }
 
 extend type Mutation {
-    updateHashTag(input: HashTagInput!): Boolean!
-    deleteHashTag(input: ID!): Boolean!
+    updateHashTag(input: HashTagInput!): Boolean! @auth
+    deleteHashTag(input: ID!): Boolean! @auth
 }
 
 type HashTag {

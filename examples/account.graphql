@@ -1,0 +1,54 @@
+# 发送验证码
+mutation SendEmailCode($input:SendEmailCodeInput!) {
+    sendEmailCode(input:$input)
+}
+# {
+#  "input": {
+#    "mail": "mail@example.com",
+#    "register": false # 是否为注册邮件，否为找回密码
+#  }
+#}
+
+# 注册
+mutation Register($input: RegisterInput!) {
+    register(input: $input)
+}
+# {
+#  "input": {
+#    "username": "USERNAME",
+#    "email": "mail@example.com",
+#    "email_verify_code": "123456",
+#    "password": "PASSWORD"
+#  }
+# }
+
+
+# 找回密码
+mutation ResetPassword($input:ForgetInput!){
+    forget(input:$input)
+}
+
+# {
+#  "input": {
+#    "email": "mail@example.com",
+#    "password": "NEW_PASSWORD",
+#    "email_verify_code": "123456"
+#  }
+#}
+
+
+# 登录
+mutation Login($input: LoginInput!) {
+    login(input: $input) {
+        id
+        token
+        permission
+        expire
+    }
+}
+# {
+#  "input": {
+#    "username": "USERNAME",
+#    "password": "PASSWORD"
+#  }
+#}

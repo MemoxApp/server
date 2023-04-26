@@ -5,15 +5,15 @@ extend type Query {
         page: Int!,
         size: Int!,
         desc: Boolean! = true
-    ):[Comment]!
+    ):[Comment]! @auth
     "Comment 的所有子回复"
-    comments(input: ID!): [Comment]!
+    comments(input: ID!): [Comment]! @auth
 }
 
 extend type Mutation {
-    addComment(input: CommentInput!): ID!
-    updateComment(input: CommentInput!): Boolean!
-    deleteComment(input: ID!): Boolean!
+    addComment(input: CommentInput!): ID! @auth
+    updateComment(input: CommentInput!): Boolean! @auth
+    deleteComment(input: ID!): Boolean! @auth
 }
 
 type Comment {

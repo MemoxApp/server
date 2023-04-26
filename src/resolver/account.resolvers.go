@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
 	"time_speak_server/src/service/mail"
 	"time_speak_server/src/service/user"
 
@@ -19,15 +20,15 @@ import (
 func (r *mutationResolver) Login(ctx context.Context, input generated.LoginInput) (*generated.LoginPayload, error) {
 	match, err := r.userSvc.CheckPasswordByUsername(ctx, input.Username, input.Password)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, exception.InternalError(err)
 	}
 	if !match {
-		return nil, errUsernameOrPasswordWrong
+		return nil, exception.ErrUsernameOrPasswordWrong
 	}
 
 	jwt, token, err := r.userSvc.GetTokenByUsername(ctx, input.Username)
 	if err != nil {
-		return nil, internalError(err)
+		return nil, exception.InternalError(err)
 	}
 
 	return &generated.LoginPayload{
@@ -54,9 +55,9 @@ func (r *mutationResolver) Register(ctx context.Context, input generated.Registe
 				return "", err
 			}
 		}
-		return "", errMailOccupied
+		return "", exception.ErrMailOccupied
 	}
-	return "", errVerifyCodeWrong
+	return "", exception.ErrVerifyCodeWrong
 }
 
 // Forget is the resolver for the forget field.
@@ -66,7 +67,7 @@ func (r *mutationResolver) Forget(ctx context.Context, input generated.ForgetInp
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				// 未注册
-				return false, errUserNotFound
+				return false, exception.ErrUserNotFound
 			} else {
 				return false, err
 			}
@@ -92,7 +93,7 @@ func (r *mutationResolver) Forget(ctx context.Context, input generated.ForgetInp
 		_ = r.r.Del(ctx, mail.CodeKey(input.Email)).Err()
 		return true, nil
 	}
-	return false, errVerifyCodeWrong
+	return false, exception.ErrVerifyCodeWrong
 }
 
 // SendEmailCode is the resolver for the sendEmailCode field.
@@ -104,9 +105,9 @@ func (r *mutationResolver) SendEmailCode(ctx context.Context, input generated.Se
 	err := r.mailSvc.NewEmailVerifyCode(ctx, input.Mail, act)
 	if err != nil {
 		if err == mail.ErrVerifyCodeCoolDown {
-			return false, errTooManyRequest
+			return false, exception.ErrTooManyRequest
 		} else {
-			return false, internalError(err)
+			return false, exception.InternalError(err)
 		}
 	}
 	return true, nil

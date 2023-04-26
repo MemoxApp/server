@@ -1,12 +1,12 @@
 extend type Query {
     "所有Subscribes"
-    allSubscribes:[Subscribe]!
+    allSubscribes:[Subscribe]! @auth
 }
 
 extend type Mutation {
-    addSubscribe(input: SubscribeInput!): ID!
-    updateSubscribe(input: SubscribeInput!): Boolean!
-    deleteSubscribe(input: ID!): Boolean!
+    addSubscribe(input: SubscribeInput!): ID! @auth
+    updateSubscribe(input: SubscribeInput!): Boolean! @auth
+    deleteSubscribe(input: ID!): Boolean! @auth
 }
 
 type Subscribe {

@@ -6,7 +6,7 @@ extend type Query {
         id: ID!,
         page: Int!,
         size: Int!,
-    ):[History]!
+    ):[History]! @auth
 }
 
 type History {
@@ -20,6 +20,7 @@ type History {
     title: String!
     "内容"
     content: String!
+    hashtags: [HashTag]!
     "发布时间"
     create_time: DateTime!
 }

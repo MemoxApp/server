@@ -131,7 +131,7 @@ func (s *Svc) GetTokenByUsername(ctx context.Context, username string) (jwt JWTC
 }
 
 // ParseToken 解析Token
-func (s *Svc) ParseToken(ctx context.Context, token string) (*JWTClaims, error) {
+func (s *Svc) ParseToken(token string) (*JWTClaims, error) {
 	return ParseJWTToken(token, s.TokenSecret)
 }
 

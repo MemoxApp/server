@@ -4,26 +4,26 @@ extend type Query {
         page: Int!,
         size: Int!,
         desc: Boolean! = true
-    ):[Memory]!
+    ):[Memory]! @auth
     "所有Memories，按创建时间排序，默认降序"
-    allMemoriesByCreated(page:Int!,size:Int!,desc:Boolean!=true):[Memory]!
+    allMemoriesByCreated(page:Int!,size:Int!,desc:Boolean!=true):[Memory]! @auth
     "所有的归档Memories，按归档时间(update_time)排序，默认降序"
     archivedMemories(
         page: Int!,
         size: Int!,
         desc: Boolean! = true
-    ):[Memory]!
+    ):[Memory]! @auth
     "Memory 详情"
-    memory(input: ID!): Memory!
+    memory(input: ID!): Memory! @auth
 }
 
 extend type Mutation {
-    addMemory(input: AddMemoryInput!): ID!
-    updateMemory(input: AddMemoryInput!): Boolean!
+    addMemory(input: AddMemoryInput!): ID! @auth
+    updateMemory(input: AddMemoryInput!): Boolean! @auth
     "归档Memory"
-    archiveMemory(input: ID!): Boolean!
+    archiveMemory(input: ID!): Boolean! @auth
     "彻底删除Memory(只有已归档的Memory可以被删除)"
-    deleteMemory(input: ID!): Boolean!
+    deleteMemory(input: ID!): Boolean! @auth
 }
 
 type Memory {
