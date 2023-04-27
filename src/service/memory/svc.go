@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 	"time_speak_server/src/exception"
+	"time_speak_server/src/opts"
 	"time_speak_server/src/service/cache"
 	"time_speak_server/src/service/user"
 )
@@ -20,7 +21,6 @@ type Svc struct {
 	m     *mongo.Collection
 	c     *cache.Svc
 }
-type Option func(bson.M) bson.M
 
 // NewMemorySvc 创建记忆服务
 func NewMemorySvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
@@ -73,7 +73,7 @@ func (s *Svc) NewMemory(ctx context.Context, title, content string, tags []primi
 }
 
 // UpdateMemory 更新记忆
-func (s *Svc) UpdateMemory(ctx context.Context, id primitive.ObjectID, opts ...Option) error {
+func (s *Svc) UpdateMemory(ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
 	toUpdate := bson.M{"update_time": time.Now().Unix()}
 	for _, f := range opts {
 		toUpdate = f(toUpdate)
@@ -136,41 +136,10 @@ func (s *Svc) GetMemories(ctx context.Context, page, size int64, byCreate, desc,
 	if err != nil {
 		return nil, err
 	}
+	defer data.Close(ctx)
 	err = data.All(ctx, &memory)
 	if err != nil {
 		return nil, err
 	}
 	return memory, nil
-}
-
-// WithTitle 设置标题
-func WithTitle(t string) Option {
-	return func(m bson.M) bson.M {
-		m["title"] = t
-		return m
-	}
-}
-
-// WithArchived 设置归档
-func WithArchived(t bool) Option {
-	return func(m bson.M) bson.M {
-		m["archived"] = t
-		return m
-	}
-}
-
-// WithContent 设置内容
-func WithContent(t string) Option {
-	return func(m bson.M) bson.M {
-		m["content"] = t
-		return m
-	}
-}
-
-// WithTags 设置话题
-func WithTags(t []primitive.ObjectID) Option {
-	return func(m bson.M) bson.M {
-		m["hash_tags"] = t
-		return m
-	}
 }

@@ -34,7 +34,7 @@ func NewResolver(conf config.Config, db *mongo.Database, r *redis.Client) *Resol
 		userSvc:    user.NewUserSvc(conf.User, db, r),
 		mailSvc:    mail.NewMailSvc(conf.Mail, r),
 		memorySvc:  memory.NewMemorySvc(conf.Memory, db, r),
-		hashtagSvc: hashtag.NewHashtagSvc(conf.Hashtag, db, r),
+		hashtagSvc: hashtag.NewHashTagSvc(conf.Hashtag, db, r),
 		historySvc: history.NewHistorySvc(conf.History, db, r),
 	}
 }

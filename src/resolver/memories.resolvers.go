@@ -8,6 +8,7 @@ import (
 	"context"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/exception"
+	"time_speak_server/src/opts"
 	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/user"
@@ -72,13 +73,13 @@ func (r *mutationResolver) UpdateMemory(ctx context.Context, input generated.Upd
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
-	var toUpdate []memory.Option
+	var toUpdate []opts.Option
 	if len(input.Title) > 0 {
-		toUpdate = append(toUpdate, memory.WithTitle(input.Title))
+		toUpdate = append(toUpdate, opts.WithTitle(input.Title))
 	}
 	if len(input.Content) > 0 {
-		toUpdate = append(toUpdate, memory.WithContent(input.Content))
-		toUpdate = append(toUpdate, memory.WithTags(tags))
+		toUpdate = append(toUpdate, opts.WithContent(input.Content))
+		toUpdate = append(toUpdate, opts.WithTags(tags))
 	}
 	if len(toUpdate) == 0 {
 		return true, nil
@@ -93,7 +94,7 @@ func (r *mutationResolver) ArchiveMemory(ctx context.Context, input string, arch
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
-	toUpdate := memory.WithArchived(archived)
+	toUpdate := opts.WithArchived(archived)
 	err = r.memorySvc.UpdateMemory(ctx, id, toUpdate)
 	return true, nil
 }
@@ -109,8 +110,8 @@ func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool
 }
 
 // AllMemories is the resolver for the allMemories field.
-func (r *queryResolver) AllMemories(ctx context.Context, page int, size int, byCreate bool, desc bool, archived bool) ([]*memory.Memory, error) {
-	memories, err := r.memorySvc.GetMemories(ctx, int64(page), int64(size), byCreate, desc, archived)
+func (r *queryResolver) AllMemories(ctx context.Context, input generated.ListInput) ([]*memory.Memory, error) {
+	memories, err := r.memorySvc.GetMemories(ctx, int64(input.Page), int64(input.Size), input.ByCreate, input.Desc, input.Archived)
 	if err != nil {
 		return nil, err
 	}

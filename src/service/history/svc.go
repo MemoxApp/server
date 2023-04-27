@@ -58,6 +58,7 @@ func (s *Svc) GetHistories(ctx context.Context, memoryID string, page, size int6
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 	err = cursor.All(ctx, &histories)
 	return histories, err
 }

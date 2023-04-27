@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
+	"time_speak_server/src/opts"
 	"time_speak_server/src/service/cache"
 )
 
@@ -19,7 +20,6 @@ type (
 		redis *redis.Client
 		c     *cache.Svc
 	}
-	Option func(bson.M) bson.M
 )
 
 func NewUserSvc(conf Config, db *mongo.Database, r *redis.Client) *Svc {
@@ -81,7 +81,7 @@ func (s *Svc) GetUserByMail(ctx context.Context, mail string) (u User, err error
 }
 
 // UpdateUser 更新用户
-func (s *Svc) UpdateUser(ctx context.Context, id primitive.ObjectID, opts ...Option) error {
+func (s *Svc) UpdateUser(ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
 	toUpdate := bson.M{"profile_change_time": time.Now().Unix()}
 	for _, f := range opts {
 		toUpdate = f(toUpdate)
