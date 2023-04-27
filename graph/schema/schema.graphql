@@ -19,3 +19,11 @@ directive @auth on FIELD_DEFINITION | OBJECT
 directive @goField(
     forceResolver: Boolean
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+input ListInput {
+    page: Int!
+    size: Int!
+    byCreate: Boolean! = false
+    desc: Boolean! = true
+    archived: Boolean! = false
+}

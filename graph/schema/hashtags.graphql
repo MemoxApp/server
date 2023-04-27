@@ -1,12 +1,8 @@
 extend type Query {
     "所有HashTags，按修改时间排序，默认降序"
     allHashTags(
-        page: Int!,
-        size: Int!,
-        desc: Boolean! = true
+        input: ListInput!
     ):[HashTag]! @auth
-    "指定 HashTag 下的所有帖子"
-    hashTags(input: ID!): [Memory]! @auth
 }
 
 extend type Mutation {
@@ -30,6 +26,10 @@ type HashTag {
 }
 
 input HashTagInput {
+    "ID"
+    id: ID!
     "名称"
-    name: String!
+    name: String
+    "是否已归档"
+    archived: Boolean
 }

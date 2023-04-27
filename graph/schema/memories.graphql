@@ -1,12 +1,6 @@
 extend type Query {
     "所有Memories，按修改时间排序，默认降序"
-    allMemories(
-        page: Int!,
-        size: Int!,
-        byCreate: Boolean! = false,
-        desc: Boolean! = true,
-        archived: Boolean! = false,
-    ):[Memory]! @auth
+    allMemories(input: ListInput!):[Memory]! @auth
     "Memory 详情"
     memory(input: ID!): Memory! @auth
 }

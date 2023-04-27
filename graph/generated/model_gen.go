@@ -44,8 +44,20 @@ type ForgetInput struct {
 }
 
 type HashTagInput struct {
+	// ID
+	ID string `json:"id"`
 	// 名称
-	Name string `json:"name"`
+	Name *string `json:"name,omitempty"`
+	// 是否已归档
+	Archived *bool `json:"archived,omitempty"`
+}
+
+type ListInput struct {
+	Page     int  `json:"page"`
+	Size     int  `json:"size"`
+	ByCreate bool `json:"byCreate"`
+	Desc     bool `json:"desc"`
+	Archived bool `json:"archived"`
 }
 
 type LoginInput struct {
