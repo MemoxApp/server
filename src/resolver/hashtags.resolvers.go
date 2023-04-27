@@ -8,7 +8,24 @@ import (
 	"context"
 	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/service/hashtag"
+	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/user"
 )
+
+// ID is the resolver for the id field.
+func (r *hashTagResolver) ID(ctx context.Context, obj *hashtag.HashTag) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// User is the resolver for the user field.
+func (r *hashTagResolver) User(ctx context.Context, obj *hashtag.HashTag) (*user.User, error) {
+	u, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
 
 // UpdateHashTag is the resolver for the updateHashTag field.
 func (r *mutationResolver) UpdateHashTag(ctx context.Context, input generated.HashTagInput) (bool, error) {
@@ -21,11 +38,16 @@ func (r *mutationResolver) DeleteHashTag(ctx context.Context, input string) (boo
 }
 
 // AllHashTags is the resolver for the allHashTags field.
-func (r *queryResolver) AllHashTags(ctx context.Context, page int, size int, desc bool) ([]*generated.HashTag, error) {
+func (r *queryResolver) AllHashTags(ctx context.Context, page int, size int, desc bool) ([]*hashtag.HashTag, error) {
 	panic(fmt.Errorf("not implemented: AllHashTags - allHashTags"))
 }
 
 // HashTags is the resolver for the hashTags field.
-func (r *queryResolver) HashTags(ctx context.Context, input string) ([]*generated.Memory, error) {
+func (r *queryResolver) HashTags(ctx context.Context, input string) ([]*memory.Memory, error) {
 	panic(fmt.Errorf("not implemented: HashTags - hashTags"))
 }
+
+// HashTag returns generated.HashTagResolver implementation.
+func (r *Resolver) HashTag() generated.HashTagResolver { return &hashTagResolver{r} }
+
+type hashTagResolver struct{ *Resolver }

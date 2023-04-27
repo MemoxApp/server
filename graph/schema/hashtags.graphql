@@ -17,8 +17,6 @@ extend type Mutation {
 type HashTag {
     "HashTag ID"
     id: ID!
-    "Memory ID"
-    memory_id: ID!
     "创建用户"
     user: User!
     "Tag名称"

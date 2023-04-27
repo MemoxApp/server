@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"regexp"
 	"time"
-	"time_speak_server/src/log"
 	"time_speak_server/src/service/cache"
 	"time_speak_server/src/service/user"
 )
@@ -35,7 +34,7 @@ func (s *Svc) NewHashtag(ctx context.Context, name string) (primitive.ObjectID, 
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
-	hashtag := Hashtag{
+	hashtag := HashTag{
 		ObjectID:   primitive.NewObjectID(),
 		Uid:        id,
 		Name:       name,
@@ -47,7 +46,7 @@ func (s *Svc) NewHashtag(ctx context.Context, name string) (primitive.ObjectID, 
 }
 
 func (s *Svc) GetOrInsertHashtag(ctx context.Context, name string) (primitive.ObjectID, error) {
-	var tag Hashtag
+	var tag HashTag
 	err := s.m.FindOne(ctx, bson.M{"name": name}).Decode(&tag)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -62,13 +61,51 @@ func (s *Svc) GetOrInsertHashtag(ctx context.Context, name string) (primitive.Ob
 	return tag.ObjectID, nil
 }
 
-func (s *Svc) GetHashtag(ctx context.Context, name string) (*Hashtag, error) {
-	var tag Hashtag
-	err := s.m.FindOne(ctx, bson.M{"name": name}).Decode(&tag)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, errHashTagNotFound
+func (s *Svc) GetHashTag(ctx context.Context, name string) (*HashTag, error) {
+	f := func() ([]byte, error) {
+		var tag HashTag
+		err := s.m.FindOne(ctx, bson.M{"name": name}).Decode(&tag)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, errHashTagNotFound
+			}
+			return nil, err
 		}
+		return bson.Marshal(tag)
+	}
+	var tag HashTag
+	// Redis 缓存
+	result, err := s.c.Get(ctx, fmt.Sprintf("Tag-%s", name), time.Minute*time.Duration(10), f)
+	if err != nil {
+		return nil, err
+	}
+	err = bson.Unmarshal(result, &tag)
+	if err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
+func (s *Svc) GetHashTagByID(ctx context.Context, id primitive.ObjectID) (*HashTag, error) {
+	f := func() ([]byte, error) {
+		var tag HashTag
+		err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&tag)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, errHashTagNotFound
+			}
+			return nil, err
+		}
+		return bson.Marshal(tag)
+	}
+	var tag HashTag
+	// Redis 缓存
+	result, err := s.c.Get(ctx, fmt.Sprintf("#-%s", id.Hex()), time.Minute*time.Duration(10), f)
+	if err != nil {
+		return nil, err
+	}
+	err = bson.Unmarshal(result, &tag)
+	if err != nil {
 		return nil, err
 	}
 	return &tag, nil
@@ -90,7 +127,6 @@ func (s *Svc) MakeHashTags(ctx context.Context, content string) ([]primitive.Obj
 		if err != nil {
 			return nil, err
 		}
-		log.Debug("TAG_HEX:" + string(result))
 		id, err := primitive.ObjectIDFromHex(string(result))
 		if err != nil {
 			return nil, err
