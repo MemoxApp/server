@@ -18,6 +18,7 @@ type User struct {
 	PasswordChangeTime int64              `bson:"password_change_time"` // 上次修改密码时间
 	ProfileChangeTime  int64              `bson:"profile_change_time"`  // 上次修改资料时间
 	Permission         int                `bson:"permission"`           // 权限 0 普通用户 1 管理员
+	Subscribe          int                `bson:"subscribe"`            // 订阅ID
 }
 
 func (User) IsSearchResult() {}

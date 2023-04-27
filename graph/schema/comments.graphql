@@ -1,18 +1,23 @@
 extend type Query {
-    "帖子的所有Comments，按创建时间排序，默认降序"
+    "所有Comments，按创建时间排序，默认降序"
     allComments(
         id: ID!,
         page: Int!,
         size: Int!,
         desc: Boolean! = true
     ):[Comment]! @auth
-    "Comment 的所有子回复"
-    comments(input: ID!): [Comment]! @auth
+    "所有SubComments，按创建时间排序，默认降序"
+    subComments(
+        id: ID!,
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[SubComment]! @auth
 }
 
 extend type Mutation {
-    addComment(input: CommentInput!): ID! @auth
-    updateComment(input: CommentInput!): Boolean! @auth
+    addComment(input: AddCommentInput!): ID! @auth
+    updateComment(input: UpdateCommentInput!): Boolean! @auth
     deleteComment(input: ID!): Boolean! @auth
 }
 
@@ -25,6 +30,9 @@ type Comment {
     user: User!
     "内容"
     content: String!
+    "子回复"
+    subComments: [SubComment]!
+    hashtags: [HashTag]!
     "是否已归档"
     archived: Boolean!
     "发布时间"
@@ -33,7 +41,39 @@ type Comment {
     update_time: DateTime!
 }
 
-input CommentInput {
+type SubComment {
+    "Comment ID"
+    id: ID!
+    "Comment 对象"
+    comment: Comment!
+    "创建用户"
+    user: User!
     "内容"
     content: String!
+    "是否已归档"
+    archived: Boolean!
+    hashtags: [HashTag]!
+    "发布时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input AddCommentInput {
+    "Comment 对象ID"
+    id: ID!
+    "是否子回复"
+    subComment: Boolean!
+    "内容"
+    content: String!
+}
+
+
+input UpdateCommentInput {
+    "Comment ID"
+    id: ID!
+    "内容"
+    content: String
+    "是否已归档"
+    archived: Boolean
 }

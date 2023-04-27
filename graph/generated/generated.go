@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time_speak_server/src/service/comment"
 	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/memory"
@@ -39,11 +40,13 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Comment() CommentResolver
 	HashTag() HashTagResolver
 	History() HistoryResolver
 	Memory() MemoryResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	SubComment() SubCommentResolver
 	User() UserResolver
 }
 
@@ -53,13 +56,15 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Comment struct {
-		Archived   func(childComplexity int) int
-		Content    func(childComplexity int) int
-		CreateTime func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Memory     func(childComplexity int) int
-		UpdateTime func(childComplexity int) int
-		User       func(childComplexity int) int
+		Archived    func(childComplexity int) int
+		Content     func(childComplexity int) int
+		CreateTime  func(childComplexity int) int
+		Hashtags    func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Memory      func(childComplexity int) int
+		SubComments func(childComplexity int) int
+		UpdateTime  func(childComplexity int) int
+		User        func(childComplexity int) int
 	}
 
 	HashTag struct {
@@ -100,7 +105,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddComment      func(childComplexity int, input CommentInput) int
+		AddComment      func(childComplexity int, input AddCommentInput) int
 		AddMemory       func(childComplexity int, input AddMemoryInput) int
 		AddResource     func(childComplexity int, input ResourceInput) int
 		AddSubscribe    func(childComplexity int, input SubscribeInput) int
@@ -115,7 +120,7 @@ type ComplexityRoot struct {
 		Login           func(childComplexity int, input LoginInput) int
 		Register        func(childComplexity int, input RegisterInput) int
 		SendEmailCode   func(childComplexity int, input SendEmailCodeInput) int
-		UpdateComment   func(childComplexity int, input CommentInput) int
+		UpdateComment   func(childComplexity int, input UpdateCommentInput) int
 		UpdateHashTag   func(childComplexity int, input HashTagInput) int
 		UpdateMemory    func(childComplexity int, input UpdateMemoryInput) int
 		UpdateSubscribe func(childComplexity int, input SubscribeInput) int
@@ -128,9 +133,9 @@ type ComplexityRoot struct {
 		AllMemories   func(childComplexity int, input ListInput) int
 		AllResources  func(childComplexity int, page int, size int, desc bool) int
 		AllSubscribes func(childComplexity int) int
-		Comments      func(childComplexity int, input string) int
 		CurrentUser   func(childComplexity int) int
 		Memory        func(childComplexity int, input string) int
+		SubComments   func(childComplexity int, id string, page int, size int, desc bool) int
 	}
 
 	Resource struct {
@@ -140,6 +145,17 @@ type ComplexityRoot struct {
 		Memories   func(childComplexity int) int
 		Path       func(childComplexity int) int
 		Size       func(childComplexity int) int
+		User       func(childComplexity int) int
+	}
+
+	SubComment struct {
+		Archived   func(childComplexity int) int
+		Comment    func(childComplexity int) int
+		Content    func(childComplexity int) int
+		CreateTime func(childComplexity int) int
+		Hashtags   func(childComplexity int) int
+		ID         func(childComplexity int) int
+		UpdateTime func(childComplexity int) int
 		User       func(childComplexity int) int
 	}
 
@@ -171,6 +187,14 @@ type ComplexityRoot struct {
 	}
 }
 
+type CommentResolver interface {
+	ID(ctx context.Context, obj *comment.Comment) (string, error)
+	Memory(ctx context.Context, obj *comment.Comment) (*memory.Memory, error)
+	User(ctx context.Context, obj *comment.Comment) (*user.User, error)
+
+	SubComments(ctx context.Context, obj *comment.Comment) ([]*comment.Comment, error)
+	Hashtags(ctx context.Context, obj *comment.Comment) ([]*hashtag.HashTag, error)
+}
 type HashTagResolver interface {
 	ID(ctx context.Context, obj *hashtag.HashTag) (string, error)
 	User(ctx context.Context, obj *hashtag.HashTag) (*user.User, error)
@@ -193,8 +217,8 @@ type MutationResolver interface {
 	Register(ctx context.Context, input RegisterInput) (string, error)
 	Forget(ctx context.Context, input ForgetInput) (bool, error)
 	SendEmailCode(ctx context.Context, input SendEmailCodeInput) (bool, error)
-	AddComment(ctx context.Context, input CommentInput) (string, error)
-	UpdateComment(ctx context.Context, input CommentInput) (bool, error)
+	AddComment(ctx context.Context, input AddCommentInput) (string, error)
+	UpdateComment(ctx context.Context, input UpdateCommentInput) (bool, error)
 	DeleteComment(ctx context.Context, input string) (bool, error)
 	UpdateHashTag(ctx context.Context, input HashTagInput) (bool, error)
 	DeleteHashTag(ctx context.Context, input string) (bool, error)
@@ -210,8 +234,8 @@ type MutationResolver interface {
 	DeleteSubscribe(ctx context.Context, input string) (bool, error)
 }
 type QueryResolver interface {
-	AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*Comment, error)
-	Comments(ctx context.Context, input string) ([]*Comment, error)
+	AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
+	SubComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
 	AllHashTags(ctx context.Context, input ListInput) ([]*hashtag.HashTag, error)
 	AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error)
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
@@ -219,6 +243,13 @@ type QueryResolver interface {
 	AllResources(ctx context.Context, page int, size int, desc bool) ([]*Resource, error)
 	AllSubscribes(ctx context.Context) ([]*Subscribe, error)
 	CurrentUser(ctx context.Context) (*user.User, error)
+}
+type SubCommentResolver interface {
+	ID(ctx context.Context, obj *comment.Comment) (string, error)
+	Comment(ctx context.Context, obj *comment.Comment) (*comment.Comment, error)
+	User(ctx context.Context, obj *comment.Comment) (*user.User, error)
+
+	Hashtags(ctx context.Context, obj *comment.Comment) ([]*hashtag.HashTag, error)
 }
 type UserResolver interface {
 	Used(ctx context.Context, obj *user.User) (int, error)
@@ -261,6 +292,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Comment.CreateTime(childComplexity), true
 
+	case "Comment.hashtags":
+		if e.complexity.Comment.Hashtags == nil {
+			break
+		}
+
+		return e.complexity.Comment.Hashtags(childComplexity), true
+
 	case "Comment.id":
 		if e.complexity.Comment.ID == nil {
 			break
@@ -274,6 +312,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.Memory(childComplexity), true
+
+	case "Comment.subComments":
+		if e.complexity.Comment.SubComments == nil {
+			break
+		}
+
+		return e.complexity.Comment.SubComments(childComplexity), true
 
 	case "Comment.update_time":
 		if e.complexity.Comment.UpdateTime == nil {
@@ -474,7 +519,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddComment(childComplexity, args["input"].(CommentInput)), true
+		return e.complexity.Mutation.AddComment(childComplexity, args["input"].(AddCommentInput)), true
 
 	case "Mutation.addMemory":
 		if e.complexity.Mutation.AddMemory == nil {
@@ -654,7 +699,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateComment(childComplexity, args["input"].(CommentInput)), true
+		return e.complexity.Mutation.UpdateComment(childComplexity, args["input"].(UpdateCommentInput)), true
 
 	case "Mutation.updateHashTag":
 		if e.complexity.Mutation.UpdateHashTag == nil {
@@ -759,18 +804,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.AllSubscribes(childComplexity), true
 
-	case "Query.comments":
-		if e.complexity.Query.Comments == nil {
-			break
-		}
-
-		args, err := ec.field_Query_comments_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Comments(childComplexity, args["input"].(string)), true
-
 	case "Query.currentUser":
 		if e.complexity.Query.CurrentUser == nil {
 			break
@@ -789,6 +822,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Memory(childComplexity, args["input"].(string)), true
+
+	case "Query.subComments":
+		if e.complexity.Query.SubComments == nil {
+			break
+		}
+
+		args, err := ec.field_Query_subComments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SubComments(childComplexity, args["id"].(string), args["page"].(int), args["size"].(int), args["desc"].(bool)), true
 
 	case "Resource.archived":
 		if e.complexity.Resource.Archived == nil {
@@ -838,6 +883,62 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Resource.User(childComplexity), true
+
+	case "SubComment.archived":
+		if e.complexity.SubComment.Archived == nil {
+			break
+		}
+
+		return e.complexity.SubComment.Archived(childComplexity), true
+
+	case "SubComment.comment":
+		if e.complexity.SubComment.Comment == nil {
+			break
+		}
+
+		return e.complexity.SubComment.Comment(childComplexity), true
+
+	case "SubComment.content":
+		if e.complexity.SubComment.Content == nil {
+			break
+		}
+
+		return e.complexity.SubComment.Content(childComplexity), true
+
+	case "SubComment.create_time":
+		if e.complexity.SubComment.CreateTime == nil {
+			break
+		}
+
+		return e.complexity.SubComment.CreateTime(childComplexity), true
+
+	case "SubComment.hashtags":
+		if e.complexity.SubComment.Hashtags == nil {
+			break
+		}
+
+		return e.complexity.SubComment.Hashtags(childComplexity), true
+
+	case "SubComment.id":
+		if e.complexity.SubComment.ID == nil {
+			break
+		}
+
+		return e.complexity.SubComment.ID(childComplexity), true
+
+	case "SubComment.update_time":
+		if e.complexity.SubComment.UpdateTime == nil {
+			break
+		}
+
+		return e.complexity.SubComment.UpdateTime(childComplexity), true
+
+	case "SubComment.user":
+		if e.complexity.SubComment.User == nil {
+			break
+		}
+
+		return e.complexity.SubComment.User(childComplexity), true
 
 	case "Subscribe.available":
 		if e.complexity.Subscribe.Available == nil {
@@ -973,8 +1074,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAddCommentInput,
 		ec.unmarshalInputAddMemoryInput,
-		ec.unmarshalInputCommentInput,
 		ec.unmarshalInputForgetInput,
 		ec.unmarshalInputHashTagInput,
 		ec.unmarshalInputListInput,
@@ -983,6 +1084,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputResourceInput,
 		ec.unmarshalInputSendEmailCodeInput,
 		ec.unmarshalInputSubscribeInput,
+		ec.unmarshalInputUpdateCommentInput,
 		ec.unmarshalInputUpdateMemoryInput,
 	)
 	first := true
@@ -1087,20 +1189,25 @@ input SendEmailCodeInput {
 }
 `, BuiltIn: false},
 	{Name: "../schema/comments.graphql", Input: `extend type Query {
-    "帖子的所有Comments，按创建时间排序，默认降序"
+    "所有Comments，按创建时间排序，默认降序"
     allComments(
         id: ID!,
         page: Int!,
         size: Int!,
         desc: Boolean! = true
     ):[Comment]! @auth
-    "Comment 的所有子回复"
-    comments(input: ID!): [Comment]! @auth
+    "所有SubComments，按创建时间排序，默认降序"
+    subComments(
+        id: ID!,
+        page: Int!,
+        size: Int!,
+        desc: Boolean! = true
+    ):[SubComment]! @auth
 }
 
 extend type Mutation {
-    addComment(input: CommentInput!): ID! @auth
-    updateComment(input: CommentInput!): Boolean! @auth
+    addComment(input: AddCommentInput!): ID! @auth
+    updateComment(input: UpdateCommentInput!): Boolean! @auth
     deleteComment(input: ID!): Boolean! @auth
 }
 
@@ -1113,6 +1220,9 @@ type Comment {
     user: User!
     "内容"
     content: String!
+    "子回复"
+    subComments: [SubComment]!
+    hashtags: [HashTag]!
     "是否已归档"
     archived: Boolean!
     "发布时间"
@@ -1121,9 +1231,41 @@ type Comment {
     update_time: DateTime!
 }
 
-input CommentInput {
+type SubComment {
+    "Comment ID"
+    id: ID!
+    "Comment 对象"
+    comment: Comment!
+    "创建用户"
+    user: User!
     "内容"
     content: String!
+    "是否已归档"
+    archived: Boolean!
+    hashtags: [HashTag]!
+    "发布时间"
+    create_time: DateTime!
+    "修改时间"
+    update_time: DateTime!
+}
+
+input AddCommentInput {
+    "Comment 对象ID"
+    id: ID!
+    "是否子回复"
+    subComment: Boolean!
+    "内容"
+    content: String!
+}
+
+
+input UpdateCommentInput {
+    "Comment ID"
+    id: ID!
+    "内容"
+    content: String
+    "是否已归档"
+    archived: Boolean
 }
 `, BuiltIn: false},
 	{Name: "../schema/hashtags.graphql", Input: `extend type Query {
@@ -1383,10 +1525,10 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_addComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 CommentInput
+	var arg0 AddCommentInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐCommentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNAddCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1617,10 +1759,10 @@ func (ec *executionContext) field_Mutation_sendEmailCode_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_updateComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 CommentInput
+	var arg0 UpdateCommentInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐCommentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1836,7 +1978,7 @@ func (ec *executionContext) field_Query_allResources_args(ctx context.Context, r
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_memory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1851,18 +1993,45 @@ func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawAr
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_memory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_subComments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["id"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["size"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["size"] = arg2
+	var arg3 bool
+	if tmp, ok := rawArgs["desc"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
+		arg3, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["desc"] = arg3
 	return args, nil
 }
 
@@ -1904,7 +2073,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1918,7 +2087,7 @@ func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Comment().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1939,8 +2108,8 @@ func (ec *executionContext) fieldContext_Comment_id(ctx context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -1948,7 +2117,7 @@ func (ec *executionContext) fieldContext_Comment_id(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_memory(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_memory(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_memory(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1962,7 +2131,7 @@ func (ec *executionContext) _Comment_memory(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Memory, nil
+		return ec.resolvers.Comment().Memory(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1983,8 +2152,8 @@ func (ec *executionContext) fieldContext_Comment_memory(ctx context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2010,7 +2179,7 @@ func (ec *executionContext) fieldContext_Comment_memory(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_user(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_user(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_user(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2024,7 +2193,7 @@ func (ec *executionContext) _Comment_user(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.Comment().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2045,8 +2214,8 @@ func (ec *executionContext) fieldContext_Comment_user(ctx context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Comment",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2074,7 +2243,7 @@ func (ec *executionContext) fieldContext_Comment_user(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_content(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_content(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_content(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2118,7 +2287,127 @@ func (ec *executionContext) fieldContext_Comment_content(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_archived(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_subComments(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Comment_subComments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Comment().SubComments(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*comment.Comment)
+	fc.Result = res
+	return ec.marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Comment_subComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_SubComment_id(ctx, field)
+			case "comment":
+				return ec.fieldContext_SubComment_comment(ctx, field)
+			case "user":
+				return ec.fieldContext_SubComment_user(ctx, field)
+			case "content":
+				return ec.fieldContext_SubComment_content(ctx, field)
+			case "archived":
+				return ec.fieldContext_SubComment_archived(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_SubComment_hashtags(ctx, field)
+			case "create_time":
+				return ec.fieldContext_SubComment_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_SubComment_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SubComment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Comment_hashtags(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Comment_hashtags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Comment().Hashtags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*hashtag.HashTag)
+	fc.Result = res
+	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Comment_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HashTag_id(ctx, field)
+			case "user":
+				return ec.fieldContext_HashTag_user(ctx, field)
+			case "name":
+				return ec.fieldContext_HashTag_name(ctx, field)
+			case "archived":
+				return ec.fieldContext_HashTag_archived(ctx, field)
+			case "create_time":
+				return ec.fieldContext_HashTag_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_HashTag_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HashTag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Comment_archived(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_archived(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2162,7 +2451,7 @@ func (ec *executionContext) fieldContext_Comment_archived(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_create_time(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_create_time(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_create_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2206,7 +2495,7 @@ func (ec *executionContext) fieldContext_Comment_create_time(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Comment_update_time(ctx context.Context, field graphql.CollectedField, obj *Comment) (ret graphql.Marshaler) {
+func (ec *executionContext) _Comment_update_time(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Comment_update_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3701,7 +3990,7 @@ func (ec *executionContext) _Mutation_addComment(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddComment(rctx, fc.Args["input"].(CommentInput))
+			return ec.resolvers.Mutation().AddComment(rctx, fc.Args["input"].(AddCommentInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -3776,7 +4065,7 @@ func (ec *executionContext) _Mutation_updateComment(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateComment(rctx, fc.Args["input"].(CommentInput))
+			return ec.resolvers.Mutation().UpdateComment(rctx, fc.Args["input"].(UpdateCommentInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -4850,10 +5139,10 @@ func (ec *executionContext) _Query_allComments(ctx context.Context, field graphq
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*Comment); ok {
+		if data, ok := tmp.([]*comment.Comment); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/graph/generated.Comment`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/comment.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4865,9 +5154,9 @@ func (ec *executionContext) _Query_allComments(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Comment)
+	res := resTmp.([]*comment.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4886,6 +5175,10 @@ func (ec *executionContext) fieldContext_Query_allComments(ctx context.Context, 
 				return ec.fieldContext_Comment_user(ctx, field)
 			case "content":
 				return ec.fieldContext_Comment_content(ctx, field)
+			case "subComments":
+				return ec.fieldContext_Comment_subComments(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Comment_hashtags(ctx, field)
 			case "archived":
 				return ec.fieldContext_Comment_archived(ctx, field)
 			case "create_time":
@@ -4910,8 +5203,8 @@ func (ec *executionContext) fieldContext_Query_allComments(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_comments(ctx, field)
+func (ec *executionContext) _Query_subComments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_subComments(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4925,7 +5218,7 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Comments(rctx, fc.Args["input"].(string))
+			return ec.resolvers.Query().SubComments(rctx, fc.Args["id"].(string), fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -4941,10 +5234,10 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*Comment); ok {
+		if data, ok := tmp.([]*comment.Comment); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/graph/generated.Comment`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/comment.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4956,12 +5249,12 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Comment)
+	res := resTmp.([]*comment.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐComment(ctx, field.Selections, res)
+	return ec.marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_comments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_subComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4970,21 +5263,23 @@ func (ec *executionContext) fieldContext_Query_comments(ctx context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Comment_id(ctx, field)
-			case "memory":
-				return ec.fieldContext_Comment_memory(ctx, field)
+				return ec.fieldContext_SubComment_id(ctx, field)
+			case "comment":
+				return ec.fieldContext_SubComment_comment(ctx, field)
 			case "user":
-				return ec.fieldContext_Comment_user(ctx, field)
+				return ec.fieldContext_SubComment_user(ctx, field)
 			case "content":
-				return ec.fieldContext_Comment_content(ctx, field)
+				return ec.fieldContext_SubComment_content(ctx, field)
 			case "archived":
-				return ec.fieldContext_Comment_archived(ctx, field)
+				return ec.fieldContext_SubComment_archived(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_SubComment_hashtags(ctx, field)
 			case "create_time":
-				return ec.fieldContext_Comment_create_time(ctx, field)
+				return ec.fieldContext_SubComment_create_time(ctx, field)
 			case "update_time":
-				return ec.fieldContext_Comment_update_time(ctx, field)
+				return ec.fieldContext_SubComment_update_time(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SubComment", field.Name)
 		},
 	}
 	defer func() {
@@ -4994,7 +5289,7 @@ func (ec *executionContext) fieldContext_Query_comments(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_comments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_subComments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -6085,6 +6380,412 @@ func (ec *executionContext) _Resource_create_time(ctx context.Context, field gra
 func (ec *executionContext) fieldContext_Resource_create_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Resource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_id(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.SubComment().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_comment(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_comment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.SubComment().Comment(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*comment.Comment)
+	fc.Result = res
+	return ec.marshalNComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_comment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Comment_id(ctx, field)
+			case "memory":
+				return ec.fieldContext_Comment_memory(ctx, field)
+			case "user":
+				return ec.fieldContext_Comment_user(ctx, field)
+			case "content":
+				return ec.fieldContext_Comment_content(ctx, field)
+			case "subComments":
+				return ec.fieldContext_Comment_subComments(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Comment_hashtags(ctx, field)
+			case "archived":
+				return ec.fieldContext_Comment_archived(ctx, field)
+			case "create_time":
+				return ec.fieldContext_Comment_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_Comment_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_user(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.SubComment().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*user.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "avatar":
+				return ec.fieldContext_User_avatar(ctx, field)
+			case "mail":
+				return ec.fieldContext_User_mail(ctx, field)
+			case "login_time":
+				return ec.fieldContext_User_login_time(ctx, field)
+			case "create_time":
+				return ec.fieldContext_User_create_time(ctx, field)
+			case "permission":
+				return ec.fieldContext_User_permission(ctx, field)
+			case "used":
+				return ec.fieldContext_User_used(ctx, field)
+			case "subscribe":
+				return ec.fieldContext_User_subscribe(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_content(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_content(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Content, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_content(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_archived(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_archived(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Archived, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_archived(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_hashtags(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_hashtags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.SubComment().Hashtags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*hashtag.HashTag)
+	fc.Result = res
+	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HashTag_id(ctx, field)
+			case "user":
+				return ec.fieldContext_HashTag_user(ctx, field)
+			case "name":
+				return ec.fieldContext_HashTag_name(ctx, field)
+			case "archived":
+				return ec.fieldContext_HashTag_archived(ctx, field)
+			case "create_time":
+				return ec.fieldContext_HashTag_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_HashTag_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HashTag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_create_time(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_create_time(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreateTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNDateTime2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_create_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubComment_update_time(ctx context.Context, field graphql.CollectedField, obj *comment.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubComment_update_time(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdateTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNDateTime2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubComment_update_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubComment",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -8674,6 +9375,50 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddCommentInput(ctx context.Context, obj interface{}) (AddCommentInput, error) {
+	var it AddCommentInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "subComment", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "subComment":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subComment"))
+			it.SubComment, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "content":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			it.Content, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAddMemoryInput(ctx context.Context, obj interface{}) (AddMemoryInput, error) {
 	var it AddMemoryInput
 	asMap := map[string]interface{}{}
@@ -8696,34 +9441,6 @@ func (ec *executionContext) unmarshalInputAddMemoryInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
-		case "content":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
-			it.Content, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputCommentInput(ctx context.Context, obj interface{}) (CommentInput, error) {
-	var it CommentInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"content"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
 		case "content":
 			var err error
 
@@ -9092,6 +9809,50 @@ func (ec *executionContext) unmarshalInputSubscribeInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context, obj interface{}) (UpdateCommentInput, error) {
+	var it UpdateCommentInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "content", "archived"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "content":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			it.Content, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateMemoryInput(ctx context.Context, obj interface{}) (UpdateMemoryInput, error) {
 	var it UpdateMemoryInput
 	asMap := map[string]interface{}{}
@@ -9146,7 +9907,7 @@ func (ec *executionContext) unmarshalInputUpdateMemoryInput(ctx context.Context,
 
 var commentImplementors = []string{"Comment"}
 
-func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, obj *Comment) graphql.Marshaler {
+func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, obj *comment.Comment) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, commentImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -9155,53 +9916,132 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Comment")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Comment_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "memory":
+			field := field
 
-			out.Values[i] = ec._Comment_memory(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_memory(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "user":
+			field := field
 
-			out.Values[i] = ec._Comment_user(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "content":
 
 			out.Values[i] = ec._Comment_content(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "subComments":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_subComments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "hashtags":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Comment_hashtags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "archived":
 
 			out.Values[i] = ec._Comment_archived(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "create_time":
 
 			out.Values[i] = ec._Comment_create_time(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "update_time":
 
 			out.Values[i] = ec._Comment_update_time(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -9833,7 +10673,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "comments":
+		case "subComments":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -9842,7 +10682,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_comments(ctx, field)
+				res = ec._Query_subComments(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10098,6 +10938,135 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 
 			if out.Values[i] == graphql.Null {
 				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var subCommentImplementors = []string{"SubComment"}
+
+func (ec *executionContext) _SubComment(ctx context.Context, sel ast.SelectionSet, obj *comment.Comment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subCommentImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubComment")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SubComment_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "comment":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SubComment_comment(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SubComment_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "content":
+
+			out.Values[i] = ec._SubComment_content(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "archived":
+
+			out.Values[i] = ec._SubComment_archived(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "hashtags":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SubComment_hashtags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "create_time":
+
+			out.Values[i] = ec._SubComment_create_time(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "update_time":
+
+			out.Values[i] = ec._SubComment_update_time(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -10643,6 +11612,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx context.Context, v interface{}) (AddCommentInput, error) {
+	res, err := ec.unmarshalInputAddCommentInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNAddMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx context.Context, v interface{}) (AddMemoryInput, error) {
 	res, err := ec.unmarshalInputAddMemoryInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10663,7 +11637,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐComment(ctx context.Context, sel ast.SelectionSet, v []*Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2time_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v comment.Comment) graphql.Marshaler {
+	return ec._Comment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -10687,7 +11665,7 @@ func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋgraphᚋge
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOComment2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐComment(ctx, sel, v[i])
+			ret[i] = ec.marshalOComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -10701,9 +11679,14 @@ func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋgraphᚋge
 	return ret
 }
 
-func (ec *executionContext) unmarshalNCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐCommentInput(ctx context.Context, v interface{}) (CommentInput, error) {
-	res, err := ec.unmarshalInputCommentInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Comment(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDateTime2int64(ctx context.Context, v interface{}) (int64, error) {
@@ -10981,6 +11964,44 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOSubComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNSubscribe2time_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v Subscribe) graphql.Marshaler {
 	return ec._Subscribe(ctx, sel, &v)
 }
@@ -11035,6 +12056,11 @@ func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋgraphᚋgen
 
 func (ec *executionContext) unmarshalNSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐSubscribeInput(ctx context.Context, v interface{}) (SubscribeInput, error) {
 	res, err := ec.unmarshalInputSubscribeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx context.Context, v interface{}) (UpdateCommentInput, error) {
+	res, err := ec.unmarshalInputUpdateCommentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -11350,7 +12376,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOComment2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐComment(ctx context.Context, sel ast.SelectionSet, v *Comment) graphql.Marshaler {
+func (ec *executionContext) marshalOComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -11399,6 +12425,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOSubComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SubComment(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOSubscribe2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *Subscribe) graphql.Marshaler {

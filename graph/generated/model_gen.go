@@ -7,31 +7,18 @@ import (
 	"time_speak_server/src/service/user"
 )
 
+type AddCommentInput struct {
+	// Comment 对象ID
+	ID string `json:"id"`
+	// 是否子回复
+	SubComment bool `json:"subComment"`
+	// 内容
+	Content string `json:"content"`
+}
+
 type AddMemoryInput struct {
 	// 标题
 	Title string `json:"title"`
-	// 内容
-	Content string `json:"content"`
-}
-
-type Comment struct {
-	// Comment ID
-	ID string `json:"id"`
-	// Memory ID
-	Memory *memory.Memory `json:"memory"`
-	// 创建用户
-	User *user.User `json:"user"`
-	// 内容
-	Content string `json:"content"`
-	// 是否已归档
-	Archived bool `json:"archived"`
-	// 发布时间
-	CreateTime int64 `json:"create_time"`
-	// 修改时间
-	UpdateTime int64 `json:"update_time"`
-}
-
-type CommentInput struct {
 	// 内容
 	Content string `json:"content"`
 }
@@ -128,6 +115,15 @@ type SubscribeInput struct {
 	Capacity int `json:"capacity"`
 	// 是否启用
 	Available string `json:"available"`
+}
+
+type UpdateCommentInput struct {
+	// Comment ID
+	ID string `json:"id"`
+	// 内容
+	Content *string `json:"content,omitempty"`
+	// 是否已归档
+	Archived *bool `json:"archived,omitempty"`
 }
 
 type UpdateMemoryInput struct {

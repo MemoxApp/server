@@ -4,6 +4,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"time_speak_server/src/log"
+	"time_speak_server/src/service/comment"
 	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/mail"
@@ -22,6 +23,7 @@ type Config struct {
 	Memory  memory.Config  `yaml:"memory"`
 	History history.Config `yaml:"history"`
 	Hashtag hashtag.Config `yaml:"hashtag"`
+	Comment comment.Config `yaml:"comment"`
 }
 
 type app struct {

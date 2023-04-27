@@ -22,6 +22,7 @@ autobind:
   - "time_speak_server/src/service/user"
   - "time_speak_server/src/service/hashtag"
   - "time_speak_server/src/service/history"
+  - "time_speak_server/src/service/comment"
 
 models:
   ID:
@@ -38,3 +39,6 @@ models:
   DateTime:
     model:
       - github.com/99designs/gqlgen/graphql.Int64
+  SubComment:
+    model:
+      - time_speak_server/src/service/comment.Comment

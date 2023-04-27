@@ -6,31 +6,192 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
+	"time_speak_server/src/opts"
+	"time_speak_server/src/service/comment"
+	"time_speak_server/src/service/hashtag"
+	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/user"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// ID is the resolver for the id field.
+func (r *commentResolver) ID(ctx context.Context, obj *comment.Comment) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// Memory is the resolver for the memory field.
+func (r *commentResolver) Memory(ctx context.Context, obj *comment.Comment) (*memory.Memory, error) {
+	getMemory, err := r.memorySvc.GetMemory(ctx, obj.ParentID)
+	if err != nil {
+		return nil, err
+	}
+	return getMemory, nil
+}
+
+// User is the resolver for the user field.
+func (r *commentResolver) User(ctx context.Context, obj *comment.Comment) (*user.User, error) {
+	getUser, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &getUser, nil
+}
+
+// SubComments is the resolver for the subComments field.
+func (r *commentResolver) SubComments(ctx context.Context, obj *comment.Comment) ([]*comment.Comment, error) {
+	comments, err := r.commentSvc.GetComments(ctx, obj.ObjectID.Hex(), 0, 5, true, true, false)
+	if err != nil {
+		return nil, err
+	}
+	return comments, nil
+}
+
+// Hashtags is the resolver for the hashtags field.
+func (r *commentResolver) Hashtags(ctx context.Context, obj *comment.Comment) ([]*hashtag.HashTag, error) {
+	var tags []*hashtag.HashTag
+	for _, t := range obj.HashTags {
+		tag, err := r.hashtagSvc.GetHashTagByID(ctx, t)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
 // AddComment is the resolver for the addComment field.
-func (r *mutationResolver) AddComment(ctx context.Context, input generated.CommentInput) (string, error) {
-	panic(fmt.Errorf("not implemented: AddComment - addComment"))
+func (r *mutationResolver) AddComment(ctx context.Context, input generated.AddCommentInput) (string, error) {
+	if len(input.Content) == 0 {
+		return "", exception.ErrContentEmpty
+	}
+	tags, err := r.hashtagSvc.MakeHashTags(ctx, input.Content)
+	if err != nil {
+		return "", err
+	}
+	commentID, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return "", err
+	}
+	var parentID primitive.ObjectID
+	if input.SubComment {
+		// 子回复，在回复数据表查找 ParentID
+		getComment, err := r.commentSvc.GetComment(ctx, commentID)
+		if err != nil {
+			return "", err
+		}
+		if getComment.ParentID == getComment.CommentID {
+			parentID = getComment.ObjectID
+		} else {
+			parentID = getComment.ParentID
+		}
+	} else {
+		// 主回复，直接使用回忆 ID 作为 ParentID
+		parentID = commentID
+	}
+	newComment, err := r.commentSvc.NewComment(ctx, input.Content, commentID, parentID, tags)
+	if err != nil {
+		return "", err
+	}
+	return newComment, nil
 }
 
 // UpdateComment is the resolver for the updateComment field.
-func (r *mutationResolver) UpdateComment(ctx context.Context, input generated.CommentInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpdateComment - updateComment"))
+func (r *mutationResolver) UpdateComment(ctx context.Context, input generated.UpdateCommentInput) (bool, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	var toUpdate []opts.Option
+	if input.Content != nil && len(*input.Content) > 0 {
+		tags, err := r.hashtagSvc.MakeHashTags(ctx, *input.Content)
+		if err != nil {
+			return false, err
+		}
+		toUpdate = append(toUpdate, opts.WithContent(*input.Content))
+		toUpdate = append(toUpdate, opts.WithTags(tags))
+	}
+	if input.Archived != nil {
+		toUpdate = append(toUpdate, opts.WithArchived(*input.Archived))
+	}
+	if len(toUpdate) == 0 {
+		return true, nil
+	}
+	err = r.commentSvc.UpdateComment(ctx, id, toUpdate...)
+	return true, nil
 }
 
 // DeleteComment is the resolver for the deleteComment field.
 func (r *mutationResolver) DeleteComment(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteComment - deleteComment"))
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	err = r.commentSvc.DeleteComment(ctx, id)
+	return true, nil
 }
 
 // AllComments is the resolver for the allComments field.
-func (r *queryResolver) AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*generated.Comment, error) {
-	panic(fmt.Errorf("not implemented: AllComments - allComments"))
+func (r *queryResolver) AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error) {
+	comments, err := r.commentSvc.GetComments(ctx, id, int64(page), int64(size), true, desc, false)
+	if err != nil {
+		return nil, err
+	}
+	return comments, nil
 }
 
-// Comments is the resolver for the comments field.
-func (r *queryResolver) Comments(ctx context.Context, input string) ([]*generated.Comment, error) {
-	panic(fmt.Errorf("not implemented: Comments - comments"))
+// SubComments is the resolver for the subComments field.
+func (r *queryResolver) SubComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error) {
+	comments, err := r.commentSvc.GetComments(ctx, id, int64(page), int64(size), true, desc, false)
+	if err != nil {
+		return nil, err
+	}
+	return comments, nil
 }
+
+// ID is the resolver for the id field.
+func (r *subCommentResolver) ID(ctx context.Context, obj *comment.Comment) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// Comment is the resolver for the comment field.
+func (r *subCommentResolver) Comment(ctx context.Context, obj *comment.Comment) (*comment.Comment, error) {
+	getComment, err := r.commentSvc.GetComment(ctx, obj.ParentID)
+	if err != nil {
+		return nil, err
+	}
+	return getComment, nil
+}
+
+// User is the resolver for the user field.
+func (r *subCommentResolver) User(ctx context.Context, obj *comment.Comment) (*user.User, error) {
+	getUser, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &getUser, nil
+}
+
+// Hashtags is the resolver for the hashtags field.
+func (r *subCommentResolver) Hashtags(ctx context.Context, obj *comment.Comment) ([]*hashtag.HashTag, error) {
+	var tags []*hashtag.HashTag
+	for _, t := range obj.HashTags {
+		tag, err := r.hashtagSvc.GetHashTagByID(ctx, t)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
+// Comment returns generated.CommentResolver implementation.
+func (r *Resolver) Comment() generated.CommentResolver { return &commentResolver{r} }
+
+// SubComment returns generated.SubCommentResolver implementation.
+func (r *Resolver) SubComment() generated.SubCommentResolver { return &subCommentResolver{r} }
+
+type commentResolver struct{ *Resolver }
+type subCommentResolver struct{ *Resolver }
