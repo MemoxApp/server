@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/exception"
+	"time_speak_server/src/service/memory"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // AddMemory is the resolver for the addMemory field.
@@ -29,18 +32,52 @@ func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMem
 }
 
 // UpdateMemory is the resolver for the updateMemory field.
-func (r *mutationResolver) UpdateMemory(ctx context.Context, input generated.AddMemoryInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpdateMemory - updateMemory"))
+func (r *mutationResolver) UpdateMemory(ctx context.Context, input generated.UpdateMemoryInput) (bool, error) {
+	if len(input.Content) == 0 {
+		return false, exception.ErrContentEmpty
+	}
+	tags, err := r.hashtagSvc.MakeHashTags(ctx, input.Content)
+	if err != nil {
+		return false, err
+	}
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	var toUpdate []memory.Option
+	if len(input.Title) > 0 {
+		toUpdate = append(toUpdate, memory.WithTitle(input.Title))
+	}
+	if len(input.Content) > 0 {
+		toUpdate = append(toUpdate, memory.WithContent(input.Content))
+		toUpdate = append(toUpdate, memory.WithTags(tags))
+	}
+	if len(toUpdate) == 0 {
+		return true, nil
+	}
+	err = r.memorySvc.UpdateMemory(ctx, id, toUpdate...)
+	return true, nil
 }
 
 // ArchiveMemory is the resolver for the archiveMemory field.
-func (r *mutationResolver) ArchiveMemory(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: ArchiveMemory - archiveMemory"))
+func (r *mutationResolver) ArchiveMemory(ctx context.Context, input string, archived bool) (bool, error) {
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	toUpdate := memory.WithArchived(archived)
+	err = r.memorySvc.UpdateMemory(ctx, id, toUpdate)
+	return true, nil
 }
 
 // DeleteMemory is the resolver for the deleteMemory field.
 func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteMemory - deleteMemory"))
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	err = r.memorySvc.DeleteMemory(ctx, id)
+	return true, nil
 }
 
 // AllMemories is the resolver for the allMemories field.

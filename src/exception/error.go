@@ -18,6 +18,7 @@ var (
 	ErrTooManyRequest = GqlError("请求过于频繁", "TOO_MANY_REQUEST")
 	ErrParamInvalid   = GqlError("参数不合法", "PARAM_INVALID")
 	ErrContentEmpty   = GqlError("你还什么都没有写呢", "CONTENT_EMPTY")
+	ErrInvalidID      = GqlError("错误的ID", "INVALID_ID")
 
 	ErrTitleTooLong   = GqlError("标题太长啦", "TITLE_TOO_LONG")
 	ErrContentTooLong = GqlError("内容太长啦", "CONTENT_TOO_LONG")

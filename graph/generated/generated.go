@@ -67,6 +67,7 @@ type ComplexityRoot struct {
 	History struct {
 		Content    func(childComplexity int) int
 		CreateTime func(childComplexity int) int
+		Hashtags   func(childComplexity int) int
 		ID         func(childComplexity int) int
 		MemoryID   func(childComplexity int) int
 		Title      func(childComplexity int) int
@@ -96,7 +97,7 @@ type ComplexityRoot struct {
 		AddMemory       func(childComplexity int, input AddMemoryInput) int
 		AddResource     func(childComplexity int, input ResourceInput) int
 		AddSubscribe    func(childComplexity int, input SubscribeInput) int
-		ArchiveMemory   func(childComplexity int, input string) int
+		ArchiveMemory   func(childComplexity int, input string, archived bool) int
 		ArchiveResource func(childComplexity int, input string) int
 		DeleteComment   func(childComplexity int, input string) int
 		DeleteHashTag   func(childComplexity int, input string) int
@@ -109,7 +110,7 @@ type ComplexityRoot struct {
 		SendEmailCode   func(childComplexity int, input SendEmailCodeInput) int
 		UpdateComment   func(childComplexity int, input CommentInput) int
 		UpdateHashTag   func(childComplexity int, input HashTagInput) int
-		UpdateMemory    func(childComplexity int, input AddMemoryInput) int
+		UpdateMemory    func(childComplexity int, input UpdateMemoryInput) int
 		UpdateSubscribe func(childComplexity int, input SubscribeInput) int
 	}
 
@@ -177,8 +178,8 @@ type MutationResolver interface {
 	UpdateHashTag(ctx context.Context, input HashTagInput) (bool, error)
 	DeleteHashTag(ctx context.Context, input string) (bool, error)
 	AddMemory(ctx context.Context, input AddMemoryInput) (string, error)
-	UpdateMemory(ctx context.Context, input AddMemoryInput) (bool, error)
-	ArchiveMemory(ctx context.Context, input string) (bool, error)
+	UpdateMemory(ctx context.Context, input UpdateMemoryInput) (bool, error)
+	ArchiveMemory(ctx context.Context, input string, archived bool) (bool, error)
 	DeleteMemory(ctx context.Context, input string) (bool, error)
 	AddResource(ctx context.Context, input ResourceInput) (*UploadTokenPayload, error)
 	ArchiveResource(ctx context.Context, input string) (bool, error)
@@ -328,6 +329,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.History.CreateTime(childComplexity), true
+
+	case "History.hashtags":
+		if e.complexity.History.Hashtags == nil {
+			break
+		}
+
+		return e.complexity.History.Hashtags(childComplexity), true
 
 	case "History.id":
 		if e.complexity.History.ID == nil {
@@ -499,7 +507,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ArchiveMemory(childComplexity, args["input"].(string)), true
+		return e.complexity.Mutation.ArchiveMemory(childComplexity, args["input"].(string), args["archived"].(bool)), true
 
 	case "Mutation.archiveResource":
 		if e.complexity.Mutation.ArchiveResource == nil {
@@ -655,7 +663,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateMemory(childComplexity, args["input"].(AddMemoryInput)), true
+		return e.complexity.Mutation.UpdateMemory(childComplexity, args["input"].(UpdateMemoryInput)), true
 
 	case "Mutation.updateSubscribe":
 		if e.complexity.Mutation.UpdateSubscribe == nil {
@@ -995,6 +1003,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputResourceInput,
 		ec.unmarshalInputSendEmailCodeInput,
 		ec.unmarshalInputSubscribeInput,
+		ec.unmarshalInputUpdateMemoryInput,
 	)
 	first := true
 
@@ -1197,6 +1206,7 @@ type History {
     title: String!
     "内容"
     content: String!
+    hashtags: [HashTag]!
     "发布时间"
     create_time: DateTime!
 }`, BuiltIn: false},
@@ -1221,9 +1231,9 @@ type History {
 
 extend type Mutation {
     addMemory(input: AddMemoryInput!): ID! @auth
-    updateMemory(input: AddMemoryInput!): Boolean! @auth
+    updateMemory(input: UpdateMemoryInput!): Boolean! @auth
     "归档Memory"
-    archiveMemory(input: ID!): Boolean! @auth
+    archiveMemory(input: ID!,archived: Boolean!): Boolean! @auth
     "彻底删除Memory(只有已归档的Memory可以被删除)"
     deleteMemory(input: ID!): Boolean! @auth
 }
@@ -1247,6 +1257,15 @@ type Memory {
 }
 
 input AddMemoryInput {
+    "标题"
+    title: String!
+    "内容"
+    content: String!
+}
+
+input UpdateMemoryInput {
+    "ID"
+    id: ID!
     "标题"
     title: String!
     "内容"
@@ -1458,6 +1477,15 @@ func (ec *executionContext) field_Mutation_archiveMemory_args(ctx context.Contex
 		}
 	}
 	args["input"] = arg0
+	var arg1 bool
+	if tmp, ok := rawArgs["archived"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+		arg1, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["archived"] = arg1
 	return args, nil
 }
 
@@ -1644,10 +1672,10 @@ func (ec *executionContext) field_Mutation_updateHashTag_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_updateMemory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 AddMemoryInput
+	var arg0 UpdateMemoryInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAddMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2900,6 +2928,66 @@ func (ec *executionContext) fieldContext_History_content(ctx context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _History_hashtags(ctx context.Context, field graphql.CollectedField, obj *History) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_History_hashtags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hashtags, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*HashTag)
+	fc.Result = res
+	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐHashTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_History_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "History",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HashTag_id(ctx, field)
+			case "memory_id":
+				return ec.fieldContext_HashTag_memory_id(ctx, field)
+			case "user":
+				return ec.fieldContext_HashTag_user(ctx, field)
+			case "name":
+				return ec.fieldContext_HashTag_name(ctx, field)
+			case "archived":
+				return ec.fieldContext_HashTag_archived(ctx, field)
+			case "create_time":
+				return ec.fieldContext_HashTag_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_HashTag_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HashTag", field.Name)
 		},
 	}
 	return fc, nil
@@ -4208,7 +4296,7 @@ func (ec *executionContext) _Mutation_updateMemory(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateMemory(rctx, fc.Args["input"].(AddMemoryInput))
+			return ec.resolvers.Mutation().UpdateMemory(rctx, fc.Args["input"].(UpdateMemoryInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -4283,7 +4371,7 @@ func (ec *executionContext) _Mutation_archiveMemory(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().ArchiveMemory(rctx, fc.Args["input"].(string))
+			return ec.resolvers.Mutation().ArchiveMemory(rctx, fc.Args["input"].(string), fc.Args["archived"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -5311,6 +5399,8 @@ func (ec *executionContext) fieldContext_Query_allHistories(ctx context.Context,
 				return ec.fieldContext_History_title(ctx, field)
 			case "content":
 				return ec.fieldContext_History_content(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_History_hashtags(ctx, field)
 			case "create_time":
 				return ec.fieldContext_History_create_time(ctx, field)
 			}
@@ -9342,6 +9432,50 @@ func (ec *executionContext) unmarshalInputSubscribeInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateMemoryInput(ctx context.Context, obj interface{}) (UpdateMemoryInput, error) {
+	var it UpdateMemoryInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "title", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "content":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			it.Content, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -9531,6 +9665,13 @@ func (ec *executionContext) _History(ctx context.Context, sel ast.SelectionSet, 
 		case "content":
 
 			out.Values[i] = ec._History_content(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hashtags":
+
+			out.Values[i] = ec._History_hashtags(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -11158,6 +11299,11 @@ func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋgraphᚋgen
 
 func (ec *executionContext) unmarshalNSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐSubscribeInput(ctx context.Context, v interface{}) (SubscribeInput, error) {
 	res, err := ec.unmarshalInputSubscribeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx context.Context, v interface{}) (UpdateMemoryInput, error) {
+	res, err := ec.unmarshalInputUpdateMemoryInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

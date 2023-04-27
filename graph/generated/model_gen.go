@@ -70,7 +70,8 @@ type History struct {
 	// 标题
 	Title string `json:"title"`
 	// 内容
-	Content string `json:"content"`
+	Content  string     `json:"content"`
+	Hashtags []*HashTag `json:"hashtags"`
 	// 发布时间
 	CreateTime int64 `json:"create_time"`
 }
@@ -161,6 +162,15 @@ type SubscribeInput struct {
 	Capacity int `json:"capacity"`
 	// 是否启用
 	Available string `json:"available"`
+}
+
+type UpdateMemoryInput struct {
+	// ID
+	ID string `json:"id"`
+	// 标题
+	Title string `json:"title"`
+	// 内容
+	Content string `json:"content"`
 }
 
 type UploadTokenPayload struct {

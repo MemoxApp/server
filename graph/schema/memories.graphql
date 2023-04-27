@@ -19,9 +19,9 @@ extend type Query {
 
 extend type Mutation {
     addMemory(input: AddMemoryInput!): ID! @auth
-    updateMemory(input: AddMemoryInput!): Boolean! @auth
+    updateMemory(input: UpdateMemoryInput!): Boolean! @auth
     "归档Memory"
-    archiveMemory(input: ID!): Boolean! @auth
+    archiveMemory(input: ID!,archived: Boolean!): Boolean! @auth
     "彻底删除Memory(只有已归档的Memory可以被删除)"
     deleteMemory(input: ID!): Boolean! @auth
 }
@@ -45,6 +45,15 @@ type Memory {
 }
 
 input AddMemoryInput {
+    "标题"
+    title: String!
+    "内容"
+    content: String!
+}
+
+input UpdateMemoryInput {
+    "ID"
+    id: ID!
     "标题"
     title: String!
     "内容"
