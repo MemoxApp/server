@@ -6,6 +6,7 @@ extend type Query {
         id: ID!,
         page: Int!,
         size: Int!,
+        desc: Boolean! = true,
     ):[History]! @auth
 }
 
@@ -13,7 +14,7 @@ type History {
     "History ID"
     id: ID!
     "Memory ID"
-    memory_id: ID!
+    memory: Memory!
     "创建用户"
     user: User!
     "标题"

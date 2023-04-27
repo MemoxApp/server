@@ -3,8 +3,10 @@ package history
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 	"time_speak_server/src/service/user"
 )
@@ -38,4 +40,24 @@ func (s *Svc) NewHistory(ctx context.Context, title, content string, tags []prim
 	}
 	_, err = s.m.InsertOne(ctx, history)
 	return history.ObjectID.Hex(), err
+}
+
+func (s *Svc) GetHistories(ctx context.Context, memoryID string, page, size int64, desc bool) ([]*History, error) {
+	order := 1
+	if desc {
+		order = -1
+	}
+	skip := page * size
+	var histories []*History
+	opts := &options.FindOptions{
+		Skip:  &skip,
+		Limit: &size,
+		Sort:  bson.M{"create_time": order},
+	}
+	cursor, err := s.m.Find(ctx, bson.M{"memory_id": memoryID}, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &histories)
+	return histories, err
 }

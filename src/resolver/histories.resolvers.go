@@ -6,11 +6,59 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/service/hashtag"
+	"time_speak_server/src/service/history"
+	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/user"
 )
 
-// AllHistories is the resolver for the allHistories field.
-func (r *queryResolver) AllHistories(ctx context.Context, id string, page int, size int) ([]*generated.History, error) {
-	panic(fmt.Errorf("not implemented: AllHistories - allHistories"))
+// ID is the resolver for the id field.
+func (r *historyResolver) ID(ctx context.Context, obj *history.History) (string, error) {
+	return obj.ObjectID.Hex(), nil
 }
+
+// Memory is the resolver for the memory field.
+func (r *historyResolver) Memory(ctx context.Context, obj *history.History) (*memory.Memory, error) {
+	m, err := r.memorySvc.GetMemory(ctx, obj.MemoryID)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// User is the resolver for the user field.
+func (r *historyResolver) User(ctx context.Context, obj *history.History) (*user.User, error) {
+	u, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// Hashtags is the resolver for the hashtags field.
+func (r *historyResolver) Hashtags(ctx context.Context, obj *history.History) ([]*hashtag.HashTag, error) {
+	var tags []*hashtag.HashTag
+	for _, t := range obj.HashTags {
+		tag, err := r.hashtagSvc.GetHashTagByID(ctx, t)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
+// AllHistories is the resolver for the allHistories field.
+func (r *queryResolver) AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error) {
+	histories, err := r.historySvc.GetHistories(ctx, id, int64(page), int64(size), desc)
+	if err != nil {
+		return nil, err
+	}
+	return histories, nil
+}
+
+// History returns generated.HistoryResolver implementation.
+func (r *Resolver) History() generated.HistoryResolver { return &historyResolver{r} }
+
+type historyResolver struct{ *Resolver }
