@@ -18,7 +18,10 @@ resolver:
   package: resolver
 
 autobind:
-#  - "time_speak_server/graph/model"
+  - "time_speak_server/src/service/memory"
+  - "time_speak_server/src/service/user"
+  - "time_speak_server/src/service/hashtag"
+  - "time_speak_server/src/service/history"
 
 models:
   ID:

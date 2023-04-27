@@ -2,6 +2,11 @@
 
 package generated
 
+import (
+	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/user"
+)
+
 type AddMemoryInput struct {
 	// 标题
 	Title string `json:"title"`
@@ -13,9 +18,9 @@ type Comment struct {
 	// Comment ID
 	ID string `json:"id"`
 	// Memory ID
-	MemoryID string `json:"memory_id"`
+	Memory *memory.Memory `json:"memory"`
 	// 创建用户
-	User *User `json:"user"`
+	User *user.User `json:"user"`
 	// 内容
 	Content string `json:"content"`
 	// 是否已归档
@@ -38,42 +43,9 @@ type ForgetInput struct {
 	EmailVerifyCode string `json:"email_verify_code"`
 }
 
-type HashTag struct {
-	// HashTag ID
-	ID string `json:"id"`
-	// Memory ID
-	MemoryID string `json:"memory_id"`
-	// 创建用户
-	User *User `json:"user"`
-	// Tag名称
-	Name string `json:"name"`
-	// 是否已归档
-	Archived bool `json:"archived"`
-	// 创建时间
-	CreateTime int64 `json:"create_time"`
-	// 修改时间
-	UpdateTime int64 `json:"update_time"`
-}
-
 type HashTagInput struct {
 	// 名称
 	Name string `json:"name"`
-}
-
-type History struct {
-	// History ID
-	ID string `json:"id"`
-	// Memory ID
-	MemoryID string `json:"memory_id"`
-	// 创建用户
-	User *User `json:"user"`
-	// 标题
-	Title string `json:"title"`
-	// 内容
-	Content  string     `json:"content"`
-	Hashtags []*HashTag `json:"hashtags"`
-	// 发布时间
-	CreateTime int64 `json:"create_time"`
 }
 
 type LoginInput struct {
@@ -86,24 +58,6 @@ type LoginPayload struct {
 	Token      string `json:"token"`
 	Permission int    `json:"permission"`
 	Expire     int64  `json:"expire"`
-}
-
-type Memory struct {
-	// Memory ID
-	ID string `json:"id"`
-	// 创建用户
-	User *User `json:"user"`
-	// 标题
-	Title string `json:"title"`
-	// 内容
-	Content  string     `json:"content"`
-	Hashtags []*HashTag `json:"hashtags"`
-	// 是否已归档
-	Archived bool `json:"archived"`
-	// 发布时间
-	CreateTime int64 `json:"create_time"`
-	// 修改时间
-	UpdateTime int64 `json:"update_time"`
 }
 
 type RegisterInput struct {
@@ -119,11 +73,11 @@ type Resource struct {
 	// 资源路径
 	Path string `json:"path"`
 	// 创建用户
-	User *User `json:"user"`
+	User *user.User `json:"user"`
 	// 大小(Byte)
 	Size int `json:"size"`
 	// 引用该资源的 Memories
-	Memories []*Memory `json:"memories"`
+	Memories []*memory.Memory `json:"memories"`
 	// 是否已归档
 	Archived bool `json:"archived"`
 	// 创建时间
@@ -180,25 +134,4 @@ type UploadTokenPayload struct {
 	Path string `json:"path"`
 	// URL
 	URL string `json:"url"`
-}
-
-type User struct {
-	// 用户ID
-	ID string `json:"id"`
-	// 用户名
-	Username string `json:"username"`
-	// 头像URL
-	Avatar string `json:"avatar"`
-	// 邮箱
-	Mail string `json:"mail"`
-	// 上次登录时间
-	LoginTime int64 `json:"login_time"`
-	// 注册时间
-	CreateTime int64 `json:"create_time"`
-	// 权限
-	Permission int `json:"permission"`
-	// 已使用资源(Byte)
-	Used int `json:"used"`
-	// 订阅
-	Subscribe *Subscribe `json:"subscribe"`
 }

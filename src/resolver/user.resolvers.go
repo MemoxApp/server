@@ -8,9 +8,25 @@ import (
 	"context"
 	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/service/user"
 )
 
 // CurrentUser is the resolver for the currentUser field.
-func (r *queryResolver) CurrentUser(ctx context.Context) (*generated.User, error) {
+func (r *queryResolver) CurrentUser(ctx context.Context) (*user.User, error) {
 	panic(fmt.Errorf("not implemented: CurrentUser - currentUser"))
 }
+
+// Used is the resolver for the used field.
+func (r *userResolver) Used(ctx context.Context, obj *user.User) (int, error) {
+	panic(fmt.Errorf("not implemented: Used - used"))
+}
+
+// Subscribe is the resolver for the subscribe field.
+func (r *userResolver) Subscribe(ctx context.Context, obj *user.User) (*generated.Subscribe, error) {
+	panic(fmt.Errorf("not implemented: Subscribe - subscribe"))
+}
+
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
+type userResolver struct{ *Resolver }
