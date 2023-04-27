@@ -9,21 +9,23 @@ import (
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/mail"
 	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 )
 
 type ContextKey string
 
 type Config struct {
-	App     app            `yaml:"app"`
-	DB      db             `yaml:"db"`
-	Debug   bool           `yaml:"debug"`
-	User    user.Config    `yaml:"user"`
-	Mail    mail.Config    `yaml:"mail"`
-	Memory  memory.Config  `yaml:"memory"`
-	History history.Config `yaml:"history"`
-	Hashtag hashtag.Config `yaml:"hashtag"`
-	Comment comment.Config `yaml:"comment"`
+	App       app              `yaml:"app"`
+	DB        db               `yaml:"db"`
+	Debug     bool             `yaml:"debug"`
+	User      user.Config      `yaml:"user"`
+	Mail      mail.Config      `yaml:"mail"`
+	Memory    memory.Config    `yaml:"memory"`
+	History   history.Config   `yaml:"history"`
+	Hashtag   hashtag.Config   `yaml:"hashtag"`
+	Comment   comment.Config   `yaml:"comment"`
+	Subscribe subscribe.Config `yaml:"subscribe"`
 }
 
 type app struct {

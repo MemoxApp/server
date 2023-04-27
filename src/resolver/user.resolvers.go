@@ -8,12 +8,21 @@ import (
 	"context"
 	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 )
 
 // CurrentUser is the resolver for the currentUser field.
 func (r *queryResolver) CurrentUser(ctx context.Context) (*user.User, error) {
-	panic(fmt.Errorf("not implemented: CurrentUser - currentUser"))
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	getUser, err := r.userSvc.GetUser(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	return &getUser, nil
 }
 
 // Used is the resolver for the used field.
@@ -22,7 +31,7 @@ func (r *userResolver) Used(ctx context.Context, obj *user.User) (int, error) {
 }
 
 // Subscribe is the resolver for the subscribe field.
-func (r *userResolver) Subscribe(ctx context.Context, obj *user.User) (*generated.Subscribe, error) {
+func (r *userResolver) Subscribe(ctx context.Context, obj *user.User) (*subscribe.Subscribe, error) {
 	panic(fmt.Errorf("not implemented: Subscribe - subscribe"))
 }
 

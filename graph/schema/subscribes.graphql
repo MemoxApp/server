@@ -4,9 +4,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    addSubscribe(input: SubscribeInput!): ID! @auth
-    updateSubscribe(input: SubscribeInput!): Boolean! @auth
-    deleteSubscribe(input: ID!): Boolean! @auth
+    addSubscribe(input: AddSubscribeInput!): ID! @admin
+    updateSubscribe(input: UpdateSubscribeInput!): Boolean! @admin
+    deleteSubscribe(input: ID!): Boolean! @admin
 }
 
 type Subscribe {
@@ -15,20 +15,31 @@ type Subscribe {
     "订阅名称"
     name: ID!
     "资源额度(Byte)"
-    capacity: Int!
-    "是否启用"
-    available: String!
+    capacity: Int64!
+    "是否可用"
+    available: Boolean!
     "创建时间"
     create_time: DateTime!
     "修改时间"
     update_time: DateTime!
 }
 
-input SubscribeInput {
+input AddSubscribeInput {
     "订阅名称"
-    name: ID!
+    name: String!
     "资源额度(Byte)"
-    capacity: Int!
+    capacity: Int64!
     "是否启用"
-    available: String!
+    enable: Boolean!
+}
+
+input UpdateSubscribeInput {
+    "订阅ID"
+    id: ID!
+    "订阅名称"
+    name: String
+    "资源额度(Byte)"
+    capacity: Int64
+    "是否启用"
+    enable: Boolean
 }

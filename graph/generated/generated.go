@@ -14,6 +14,7 @@ import (
 	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -47,11 +48,13 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
 	SubComment() SubCommentResolver
+	Subscribe() SubscribeResolver
 	User() UserResolver
 }
 
 type DirectiveRoot struct {
-	Auth func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Admin func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Auth  func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -108,7 +111,7 @@ type ComplexityRoot struct {
 		AddComment      func(childComplexity int, input AddCommentInput) int
 		AddMemory       func(childComplexity int, input AddMemoryInput) int
 		AddResource     func(childComplexity int, input ResourceInput) int
-		AddSubscribe    func(childComplexity int, input SubscribeInput) int
+		AddSubscribe    func(childComplexity int, input AddSubscribeInput) int
 		ArchiveMemory   func(childComplexity int, input string, archived bool) int
 		ArchiveResource func(childComplexity int, input string) int
 		DeleteComment   func(childComplexity int, input string) int
@@ -123,7 +126,7 @@ type ComplexityRoot struct {
 		UpdateComment   func(childComplexity int, input UpdateCommentInput) int
 		UpdateHashTag   func(childComplexity int, input HashTagInput) int
 		UpdateMemory    func(childComplexity int, input UpdateMemoryInput) int
-		UpdateSubscribe func(childComplexity int, input SubscribeInput) int
+		UpdateSubscribe func(childComplexity int, input UpdateSubscribeInput) int
 	}
 
 	Query struct {
@@ -229,8 +232,8 @@ type MutationResolver interface {
 	AddResource(ctx context.Context, input ResourceInput) (*UploadTokenPayload, error)
 	ArchiveResource(ctx context.Context, input string) (bool, error)
 	DeleteResource(ctx context.Context, input string) (bool, error)
-	AddSubscribe(ctx context.Context, input SubscribeInput) (string, error)
-	UpdateSubscribe(ctx context.Context, input SubscribeInput) (bool, error)
+	AddSubscribe(ctx context.Context, input AddSubscribeInput) (string, error)
+	UpdateSubscribe(ctx context.Context, input UpdateSubscribeInput) (bool, error)
 	DeleteSubscribe(ctx context.Context, input string) (bool, error)
 }
 type QueryResolver interface {
@@ -241,7 +244,7 @@ type QueryResolver interface {
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
 	Memory(ctx context.Context, input string) (*memory.Memory, error)
 	AllResources(ctx context.Context, page int, size int, desc bool) ([]*Resource, error)
-	AllSubscribes(ctx context.Context) ([]*Subscribe, error)
+	AllSubscribes(ctx context.Context) ([]*subscribe.Subscribe, error)
 	CurrentUser(ctx context.Context) (*user.User, error)
 }
 type SubCommentResolver interface {
@@ -251,9 +254,14 @@ type SubCommentResolver interface {
 
 	Hashtags(ctx context.Context, obj *comment.Comment) ([]*hashtag.HashTag, error)
 }
+type SubscribeResolver interface {
+	ID(ctx context.Context, obj *subscribe.Subscribe) (string, error)
+
+	Available(ctx context.Context, obj *subscribe.Subscribe) (bool, error)
+}
 type UserResolver interface {
 	Used(ctx context.Context, obj *user.User) (int, error)
-	Subscribe(ctx context.Context, obj *user.User) (*Subscribe, error)
+	Subscribe(ctx context.Context, obj *user.User) (*subscribe.Subscribe, error)
 }
 
 type executableSchema struct {
@@ -555,7 +563,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddSubscribe(childComplexity, args["input"].(SubscribeInput)), true
+		return e.complexity.Mutation.AddSubscribe(childComplexity, args["input"].(AddSubscribeInput)), true
 
 	case "Mutation.archiveMemory":
 		if e.complexity.Mutation.ArchiveMemory == nil {
@@ -735,7 +743,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateSubscribe(childComplexity, args["input"].(SubscribeInput)), true
+		return e.complexity.Mutation.UpdateSubscribe(childComplexity, args["input"].(UpdateSubscribeInput)), true
 
 	case "Query.allComments":
 		if e.complexity.Query.AllComments == nil {
@@ -1076,6 +1084,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddCommentInput,
 		ec.unmarshalInputAddMemoryInput,
+		ec.unmarshalInputAddSubscribeInput,
 		ec.unmarshalInputForgetInput,
 		ec.unmarshalInputHashTagInput,
 		ec.unmarshalInputListInput,
@@ -1083,9 +1092,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRegisterInput,
 		ec.unmarshalInputResourceInput,
 		ec.unmarshalInputSendEmailCodeInput,
-		ec.unmarshalInputSubscribeInput,
 		ec.unmarshalInputUpdateCommentInput,
 		ec.unmarshalInputUpdateMemoryInput,
+		ec.unmarshalInputUpdateSubscribeInput,
 	)
 	first := true
 
@@ -1441,8 +1450,13 @@ type Mutation
 
 scalar DateTime
 
+scalar Int64
+
 "权限控制"
 directive @auth on FIELD_DEFINITION | OBJECT
+
+"权限控制"
+directive @admin on FIELD_DEFINITION | OBJECT
 
 "仅用于代码生成时强制单独resolver"
 directive @goField(
@@ -1462,9 +1476,9 @@ input ListInput {
 }
 
 extend type Mutation {
-    addSubscribe(input: SubscribeInput!): ID! @auth
-    updateSubscribe(input: SubscribeInput!): Boolean! @auth
-    deleteSubscribe(input: ID!): Boolean! @auth
+    addSubscribe(input: AddSubscribeInput!): ID! @admin
+    updateSubscribe(input: UpdateSubscribeInput!): Boolean! @admin
+    deleteSubscribe(input: ID!): Boolean! @admin
 }
 
 type Subscribe {
@@ -1473,22 +1487,33 @@ type Subscribe {
     "订阅名称"
     name: ID!
     "资源额度(Byte)"
-    capacity: Int!
-    "是否启用"
-    available: String!
+    capacity: Int64!
+    "是否可用"
+    available: Boolean!
     "创建时间"
     create_time: DateTime!
     "修改时间"
     update_time: DateTime!
 }
 
-input SubscribeInput {
+input AddSubscribeInput {
     "订阅名称"
-    name: ID!
+    name: String!
     "资源额度(Byte)"
-    capacity: Int!
+    capacity: Int64!
     "是否启用"
-    available: String!
+    enable: Boolean!
+}
+
+input UpdateSubscribeInput {
+    "订阅ID"
+    id: ID!
+    "订阅名称"
+    name: String
+    "资源额度(Byte)"
+    capacity: Int64
+    "是否启用"
+    enable: Boolean
 }
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `extend type Query {
@@ -1570,10 +1595,10 @@ func (ec *executionContext) field_Mutation_addResource_args(ctx context.Context,
 func (ec *executionContext) field_Mutation_addSubscribe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 SubscribeInput
+	var arg0 AddSubscribeInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐSubscribeInput(ctx, tmp)
+		arg0, err = ec.unmarshalNAddSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1804,10 +1829,10 @@ func (ec *executionContext) field_Mutation_updateMemory_args(ctx context.Context
 func (ec *executionContext) field_Mutation_updateSubscribe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 SubscribeInput
+	var arg0 UpdateSubscribeInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐSubscribeInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4898,13 +4923,13 @@ func (ec *executionContext) _Mutation_addSubscribe(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddSubscribe(rctx, fc.Args["input"].(SubscribeInput))
+			return ec.resolvers.Mutation().AddSubscribe(rctx, fc.Args["input"].(AddSubscribeInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
+			if ec.directives.Admin == nil {
+				return nil, errors.New("directive admin is not implemented")
 			}
-			return ec.directives.Auth(ctx, nil, directive0)
+			return ec.directives.Admin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -4973,13 +4998,13 @@ func (ec *executionContext) _Mutation_updateSubscribe(ctx context.Context, field
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateSubscribe(rctx, fc.Args["input"].(SubscribeInput))
+			return ec.resolvers.Mutation().UpdateSubscribe(rctx, fc.Args["input"].(UpdateSubscribeInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
+			if ec.directives.Admin == nil {
+				return nil, errors.New("directive admin is not implemented")
 			}
-			return ec.directives.Auth(ctx, nil, directive0)
+			return ec.directives.Admin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -5051,10 +5076,10 @@ func (ec *executionContext) _Mutation_deleteSubscribe(ctx context.Context, field
 			return ec.resolvers.Mutation().DeleteSubscribe(rctx, fc.Args["input"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
+			if ec.directives.Admin == nil {
+				return nil, errors.New("directive admin is not implemented")
 			}
-			return ec.directives.Auth(ctx, nil, directive0)
+			return ec.directives.Admin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -5784,10 +5809,10 @@ func (ec *executionContext) _Query_allSubscribes(ctx context.Context, field grap
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*Subscribe); ok {
+		if data, ok := tmp.([]*subscribe.Subscribe); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/graph/generated.Subscribe`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/subscribe.Subscribe`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5799,9 +5824,9 @@ func (ec *executionContext) _Query_allSubscribes(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Subscribe)
+	res := resTmp.([]*subscribe.Subscribe)
 	fc.Result = res
-	return ec.marshalNSubscribe2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx, field.Selections, res)
+	return ec.marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allSubscribes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6796,7 +6821,7 @@ func (ec *executionContext) fieldContext_SubComment_update_time(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_id(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_id(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6810,7 +6835,7 @@ func (ec *executionContext) _Subscribe_id(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Subscribe().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6831,8 +6856,8 @@ func (ec *executionContext) fieldContext_Subscribe_id(ctx context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Subscribe",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -6840,7 +6865,7 @@ func (ec *executionContext) fieldContext_Subscribe_id(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_name(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_name(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6884,7 +6909,7 @@ func (ec *executionContext) fieldContext_Subscribe_name(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_capacity(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_capacity(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_capacity(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6910,9 +6935,9 @@ func (ec *executionContext) _Subscribe_capacity(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Subscribe_capacity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6922,13 +6947,13 @@ func (ec *executionContext) fieldContext_Subscribe_capacity(ctx context.Context,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_available(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_available(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_available(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6942,7 +6967,7 @@ func (ec *executionContext) _Subscribe_available(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Available, nil
+		return ec.resolvers.Subscribe().Available(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6954,25 +6979,25 @@ func (ec *executionContext) _Subscribe_available(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Subscribe_available(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Subscribe",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_create_time(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_create_time(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_create_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -7016,7 +7041,7 @@ func (ec *executionContext) fieldContext_Subscribe_create_time(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Subscribe_update_time(ctx context.Context, field graphql.CollectedField, obj *Subscribe) (ret graphql.Marshaler) {
+func (ec *executionContext) _Subscribe_update_time(ctx context.Context, field graphql.CollectedField, obj *subscribe.Subscribe) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subscribe_update_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -7570,9 +7595,9 @@ func (ec *executionContext) _User_subscribe(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*Subscribe)
+	res := resTmp.(*subscribe.Subscribe)
 	fc.Result = res
-	return ec.marshalNSubscribe2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx, field.Selections, res)
+	return ec.marshalNSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_subscribe(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9455,6 +9480,50 @@ func (ec *executionContext) unmarshalInputAddMemoryInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAddSubscribeInput(ctx context.Context, obj interface{}) (AddSubscribeInput, error) {
+	var it AddSubscribeInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "capacity", "enable"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "capacity":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("capacity"))
+			it.Capacity, err = ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "enable":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enable"))
+			it.Enable, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputForgetInput(ctx context.Context, obj interface{}) (ForgetInput, error) {
 	var it ForgetInput
 	asMap := map[string]interface{}{}
@@ -9765,50 +9834,6 @@ func (ec *executionContext) unmarshalInputSendEmailCodeInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSubscribeInput(ctx context.Context, obj interface{}) (SubscribeInput, error) {
-	var it SubscribeInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"name", "capacity", "available"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "capacity":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("capacity"))
-			it.Capacity, err = ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "available":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("available"))
-			it.Available, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUpdateCommentInput(ctx context.Context, obj interface{}) (UpdateCommentInput, error) {
 	var it UpdateCommentInput
 	asMap := map[string]interface{}{}
@@ -9888,6 +9913,58 @@ func (ec *executionContext) unmarshalInputUpdateMemoryInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
 			it.Content, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateSubscribeInput(ctx context.Context, obj interface{}) (UpdateSubscribeInput, error) {
+	var it UpdateSubscribeInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "name", "capacity", "enable"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "capacity":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("capacity"))
+			it.Capacity, err = ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "enable":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enable"))
+			it.Enable, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11081,7 +11158,7 @@ func (ec *executionContext) _SubComment(ctx context.Context, sel ast.SelectionSe
 
 var subscribeImplementors = []string{"Subscribe"}
 
-func (ec *executionContext) _Subscribe(ctx context.Context, sel ast.SelectionSet, obj *Subscribe) graphql.Marshaler {
+func (ec *executionContext) _Subscribe(ctx context.Context, sel ast.SelectionSet, obj *subscribe.Subscribe) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, subscribeImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -11090,46 +11167,72 @@ func (ec *executionContext) _Subscribe(ctx context.Context, sel ast.SelectionSet
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Subscribe")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Subscribe_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Subscribe_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "name":
 
 			out.Values[i] = ec._Subscribe_name(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "capacity":
 
 			out.Values[i] = ec._Subscribe_capacity(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "available":
+			field := field
 
-			out.Values[i] = ec._Subscribe_available(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Subscribe_available(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "create_time":
 
 			out.Values[i] = ec._Subscribe_create_time(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "update_time":
 
 			out.Values[i] = ec._Subscribe_update_time(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -11622,6 +11725,11 @@ func (ec *executionContext) unmarshalNAddMemoryInput2time_speak_serverᚋgraph�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNAddSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx context.Context, v interface{}) (AddSubscribeInput, error) {
+	res, err := ec.unmarshalInputAddSubscribeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11820,6 +11928,21 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx context.Context, v interface{}) (ListInput, error) {
 	res, err := ec.unmarshalInputListInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12002,11 +12125,11 @@ func (ec *executionContext) marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋs
 	return ret
 }
 
-func (ec *executionContext) marshalNSubscribe2time_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2time_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v subscribe.Subscribe) graphql.Marshaler {
 	return ec._Subscribe(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v []*Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v []*subscribe.Subscribe) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12030,7 +12153,7 @@ func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋgraphᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOSubscribe2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx, sel, v[i])
+			ret[i] = ec.marshalOSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12044,7 +12167,7 @@ func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋgraphᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12054,11 +12177,6 @@ func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋgraphᚋgen
 	return ec._Subscribe(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐSubscribeInput(ctx context.Context, v interface{}) (SubscribeInput, error) {
-	res, err := ec.unmarshalInputSubscribeInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNUpdateCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx context.Context, v interface{}) (UpdateCommentInput, error) {
 	res, err := ec.unmarshalInputUpdateCommentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12066,6 +12184,11 @@ func (ec *executionContext) unmarshalNUpdateCommentInput2time_speak_serverᚋgra
 
 func (ec *executionContext) unmarshalNUpdateMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx context.Context, v interface{}) (UpdateMemoryInput, error) {
 	res, err := ec.unmarshalInputUpdateMemoryInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx context.Context, v interface{}) (UpdateSubscribeInput, error) {
+	res, err := ec.unmarshalInputUpdateSubscribeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -12397,6 +12520,22 @@ func (ec *executionContext) marshalOHistory2ᚖtime_speak_serverᚋsrcᚋservice
 	return ec._History(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOInt642ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt64(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt64(*v)
+	return res
+}
+
 func (ec *executionContext) marshalOMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v *memory.Memory) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -12434,7 +12573,7 @@ func (ec *executionContext) marshalOSubComment2ᚖtime_speak_serverᚋsrcᚋserv
 	return ec._SubComment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSubscribe2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalOSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

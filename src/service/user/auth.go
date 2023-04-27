@@ -61,3 +61,13 @@ func GqlAuth(ctx context.Context, obj interface{}, next graphql.Resolver) (res i
 		return nil, exception.ErrPermissionDenied
 	}
 }
+
+// GqlAdmin 鉴权
+func GqlAdmin(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
+	info, ok := graphql.GetOperationContext(ctx).Stats.GetExtension("Auth").(Info)
+	if ok && info.Permission == 1 {
+		return next(ctx)
+	} else {
+		return nil, exception.ErrPermissionDenied
+	}
+}

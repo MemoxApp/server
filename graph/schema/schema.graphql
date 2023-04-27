@@ -12,8 +12,13 @@ type Mutation
 
 scalar DateTime
 
+scalar Int64
+
 "权限控制"
 directive @auth on FIELD_DEFINITION | OBJECT
+
+"权限控制"
+directive @admin on FIELD_DEFINITION | OBJECT
 
 "仅用于代码生成时强制单独resolver"
 directive @goField(

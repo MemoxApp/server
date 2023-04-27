@@ -23,6 +23,7 @@ var (
 	ErrTitleTooLong   = GqlError("标题太长啦", "TITLE_TOO_LONG")
 	ErrContentTooLong = GqlError("内容太长啦", "CONTENT_TOO_LONG")
 	ErrContentExist   = GqlError("内容已存在", "CONTENT_EXIST")
+	ErrSubscribeExist = GqlError("订阅已存在", "SUBSCRIBE_EXIST")
 
 	ErrPermissionDenied = GqlError("访问权限不足", "PERMISSION_DENIED")
 )

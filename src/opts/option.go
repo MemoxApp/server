@@ -31,6 +31,14 @@ func WithArchived(t bool) Option {
 	}
 }
 
+// WithEnabled 设置启用
+func WithEnabled(t bool) Option {
+	return func(m bson.M) bson.M {
+		m["enabled"] = t
+		return m
+	}
+}
+
 // WithContent 设置内容
 func WithContent(t string) Option {
 	return func(m bson.M) bson.M {

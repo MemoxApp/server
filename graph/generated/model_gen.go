@@ -23,6 +23,15 @@ type AddMemoryInput struct {
 	Content string `json:"content"`
 }
 
+type AddSubscribeInput struct {
+	// 订阅名称
+	Name string `json:"name"`
+	// 资源额度(Byte)
+	Capacity int64 `json:"capacity"`
+	// 是否启用
+	Enable bool `json:"enable"`
+}
+
 type ForgetInput struct {
 	Email string `json:"email"`
 	// 新密码
@@ -93,30 +102,6 @@ type SendEmailCodeInput struct {
 	Register bool   `json:"register"`
 }
 
-type Subscribe struct {
-	// Subscribe ID
-	ID string `json:"id"`
-	// 订阅名称
-	Name string `json:"name"`
-	// 资源额度(Byte)
-	Capacity int `json:"capacity"`
-	// 是否启用
-	Available string `json:"available"`
-	// 创建时间
-	CreateTime int64 `json:"create_time"`
-	// 修改时间
-	UpdateTime int64 `json:"update_time"`
-}
-
-type SubscribeInput struct {
-	// 订阅名称
-	Name string `json:"name"`
-	// 资源额度(Byte)
-	Capacity int `json:"capacity"`
-	// 是否启用
-	Available string `json:"available"`
-}
-
 type UpdateCommentInput struct {
 	// Comment ID
 	ID string `json:"id"`
@@ -133,6 +118,17 @@ type UpdateMemoryInput struct {
 	Title string `json:"title"`
 	// 内容
 	Content string `json:"content"`
+}
+
+type UpdateSubscribeInput struct {
+	// 订阅ID
+	ID string `json:"id"`
+	// 订阅名称
+	Name *string `json:"name,omitempty"`
+	// 资源额度(Byte)
+	Capacity *int64 `json:"capacity,omitempty"`
+	// 是否启用
+	Enable *bool `json:"enable,omitempty"`
 }
 
 type UploadTokenPayload struct {

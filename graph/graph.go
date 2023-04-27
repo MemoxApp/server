@@ -21,7 +21,7 @@ func GraphqlHandler(conf config.Config, db *mongo.Database, redis *redis.Client)
 
 	c := generated.Config{
 		Resolvers:  resolver.NewResolver(conf, db, redis),
-		Directives: generated.DirectiveRoot{Auth: user.GqlAuth},
+		Directives: generated.DirectiveRoot{Auth: user.GqlAuth, Admin: user.GqlAdmin},
 	}
 	srv := handler.New(generated.NewExecutableSchema(c))
 	srv.AddTransport(transport.POST{})

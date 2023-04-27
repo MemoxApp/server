@@ -6,26 +6,76 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
+	"time_speak_server/src/opts"
+	"time_speak_server/src/service/subscribe"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // AddSubscribe is the resolver for the addSubscribe field.
-func (r *mutationResolver) AddSubscribe(ctx context.Context, input generated.SubscribeInput) (string, error) {
-	panic(fmt.Errorf("not implemented: AddSubscribe - addSubscribe"))
+func (r *mutationResolver) AddSubscribe(ctx context.Context, input generated.AddSubscribeInput) (string, error) {
+	if len(input.Name) == 0 {
+		return "", exception.ErrContentEmpty
+	}
+	newMemory, err := r.subscribeSvc.NewSubscribe(ctx, input.Name, input.Capacity, input.Enable)
+	if err != nil {
+		return "", err
+	}
+	return newMemory, nil
 }
 
 // UpdateSubscribe is the resolver for the updateSubscribe field.
-func (r *mutationResolver) UpdateSubscribe(ctx context.Context, input generated.SubscribeInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpdateSubscribe - updateSubscribe"))
+func (r *mutationResolver) UpdateSubscribe(ctx context.Context, input generated.UpdateSubscribeInput) (bool, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	var toUpdate []opts.Option
+	if input.Name != nil && len(*input.Name) > 0 {
+		toUpdate = append(toUpdate, opts.With("name", *input.Name))
+	}
+	if input.Enable != nil {
+		toUpdate = append(toUpdate, opts.WithArchived(*input.Enable))
+	}
+	if len(toUpdate) == 0 {
+		return true, nil
+	}
+	err = r.subscribeSvc.UpdateSubscribe(ctx, id, toUpdate...)
+	return true, nil
 }
 
 // DeleteSubscribe is the resolver for the deleteSubscribe field.
 func (r *mutationResolver) DeleteSubscribe(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteSubscribe - deleteSubscribe"))
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	err = r.subscribeSvc.DeleteSubscribe(ctx, id)
+	return true, nil
 }
 
 // AllSubscribes is the resolver for the allSubscribes field.
-func (r *queryResolver) AllSubscribes(ctx context.Context) ([]*generated.Subscribe, error) {
-	panic(fmt.Errorf("not implemented: AllSubscribes - allSubscribes"))
+func (r *queryResolver) AllSubscribes(ctx context.Context) ([]*subscribe.Subscribe, error) {
+	subscribes, err := r.subscribeSvc.GetSubscribes(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	return subscribes, nil
 }
+
+// ID is the resolver for the id field.
+func (r *subscribeResolver) ID(ctx context.Context, obj *subscribe.Subscribe) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// Available is the resolver for the available field.
+func (r *subscribeResolver) Available(ctx context.Context, obj *subscribe.Subscribe) (bool, error) {
+	return obj.Enabled, nil
+}
+
+// Subscribe returns generated.SubscribeResolver implementation.
+func (r *Resolver) Subscribe() generated.SubscribeResolver { return &subscribeResolver{r} }
+
+type subscribeResolver struct{ *Resolver }
