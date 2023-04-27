@@ -20,7 +20,7 @@ type Comment {
     "Comment ID"
     id: ID!
     "Memory ID"
-    memory_id: ID!
+    memory: Memory!
     "创建用户"
     user: User!
     "内容"
