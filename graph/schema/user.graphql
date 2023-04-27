@@ -18,7 +18,7 @@ type User {
     "权限"
     permission: Int!
     "已使用资源(Byte)"
-    used: Int!
+    used: Int64!
     "订阅"
     subscribe: Subscribe!
 }

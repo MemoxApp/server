@@ -110,13 +110,9 @@ func (s *Svc) GetResource(ctx context.Context, id primitive.ObjectID) (*Resource
 }
 
 // GetResourceUsed 获取资源使用情况
-func (s *Svc) GetResourceUsed(ctx context.Context) (int64, error) {
-	uid, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return -1, err
-	}
+func (s *Svc) GetResourceUsed(ctx context.Context, uid primitive.ObjectID) (int64, error) {
 	var resource []*Resource
-	cursor, err := s.m.Find(ctx, bson.M{"uid": uid}) // 获取自己的所有资源
+	cursor, err := s.m.Find(ctx, bson.M{"uid": uid}) // 获取用户的所有资源
 	if err != nil {
 		return -1, err
 	}

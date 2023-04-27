@@ -6,7 +6,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
@@ -26,8 +25,12 @@ func (r *queryResolver) CurrentUser(ctx context.Context) (*user.User, error) {
 }
 
 // Used is the resolver for the used field.
-func (r *userResolver) Used(ctx context.Context, obj *user.User) (int, error) {
-	panic(fmt.Errorf("not implemented: Used - used"))
+func (r *userResolver) Used(ctx context.Context, obj *user.User) (int64, error) {
+	used, err := r.resourceSvc.GetResourceUsed(ctx, obj.ObjectID)
+	if err != nil {
+		return 0, err
+	}
+	return used, nil
 }
 
 // Subscribe is the resolver for the subscribe field.

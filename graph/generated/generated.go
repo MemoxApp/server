@@ -260,7 +260,7 @@ type SubscribeResolver interface {
 	Available(ctx context.Context, obj *subscribe.Subscribe) (bool, error)
 }
 type UserResolver interface {
-	Used(ctx context.Context, obj *user.User) (int, error)
+	Used(ctx context.Context, obj *user.User) (int64, error)
 	Subscribe(ctx context.Context, obj *user.User) (*subscribe.Subscribe, error)
 }
 
@@ -1536,7 +1536,7 @@ type User {
     "权限"
     permission: Int!
     "已使用资源(Byte)"
-    used: Int!
+    used: Int64!
     "订阅"
     subscribe: Subscribe!
 }`, BuiltIn: false},
@@ -7551,9 +7551,9 @@ func (ec *executionContext) _User_used(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_used(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7563,7 +7563,7 @@ func (ec *executionContext) fieldContext_User_used(ctx context.Context, field gr
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil

@@ -9,6 +9,7 @@ import (
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/mail"
 	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/resource"
 	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 )
@@ -26,6 +27,7 @@ type Config struct {
 	Hashtag   hashtag.Config   `yaml:"hashtag"`
 	Comment   comment.Config   `yaml:"comment"`
 	Subscribe subscribe.Config `yaml:"subscribe"`
+	Resource  resource.Config  `yaml:"resource"`
 }
 
 type app struct {
