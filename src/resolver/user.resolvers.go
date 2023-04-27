@@ -32,7 +32,11 @@ func (r *userResolver) Used(ctx context.Context, obj *user.User) (int, error) {
 
 // Subscribe is the resolver for the subscribe field.
 func (r *userResolver) Subscribe(ctx context.Context, obj *user.User) (*subscribe.Subscribe, error) {
-	panic(fmt.Errorf("not implemented: Subscribe - subscribe"))
+	getSubscribe, err := r.subscribeSvc.GetSubscribe(ctx, obj.Subscribe)
+	if err != nil {
+		return nil, err
+	}
+	return getSubscribe, nil
 }
 
 // User returns generated.UserResolver implementation.

@@ -49,25 +49,37 @@ func (s *Svc) NewHashTag(ctx context.Context, name string) (primitive.ObjectID, 
 
 // UpdateHashTag 更新标签
 func (s *Svc) UpdateHashTag(ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
 	toUpdate := bson.M{"update_time": time.Now().Unix()}
 	for _, f := range opts {
 		toUpdate = f(toUpdate)
 	}
-	_, err := s.m.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": toUpdate})
+	_, err = s.m.UpdateOne(ctx, bson.M{"uid": uid, "_id": id}, bson.M{"$set": toUpdate})
 	s.c.Del(ctx, fmt.Sprintf("#-%s", id.Hex()))
 	return err
 }
 
 // DeleteHashTag 删除标签
 func (s *Svc) DeleteHashTag(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "archived": true}) // 只有归档的才能删除
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
 	s.c.Del(ctx, fmt.Sprintf("#-%s", id.Hex()))
 	return err
 }
 
 func (s *Svc) GetOrInsertHashTag(ctx context.Context, name string) (primitive.ObjectID, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
 	var tag HashTag
-	err := s.m.FindOne(ctx, bson.M{"name": name}).Decode(&tag)
+	err = s.m.FindOne(ctx, bson.M{"uid": uid, "name": name}).Decode(&tag)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			hashtag, err := s.NewHashTag(ctx, name)
@@ -82,9 +94,13 @@ func (s *Svc) GetOrInsertHashTag(ctx context.Context, name string) (primitive.Ob
 }
 
 func (s *Svc) GetHashTag(ctx context.Context, name string) (*HashTag, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	f := func() ([]byte, error) {
 		var tag HashTag
-		err := s.m.FindOne(ctx, bson.M{"name": name}).Decode(&tag)
+		err = s.m.FindOne(ctx, bson.M{"uid": uid, "name": name}).Decode(&tag)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				return nil, errHashTagNotFound
@@ -108,6 +124,10 @@ func (s *Svc) GetHashTag(ctx context.Context, name string) (*HashTag, error) {
 
 // GetHashTags 获取标签列表
 func (s *Svc) GetHashTags(ctx context.Context, page, size int64, byCreate, desc, archived bool) ([]*HashTag, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var tags []*HashTag
 	skip := page * size
 	order := 1
@@ -118,11 +138,11 @@ func (s *Svc) GetHashTags(ctx context.Context, page, size int64, byCreate, desc,
 	if byCreate {
 		sort = "create_time"
 	}
-	cur, err := s.m.Find(ctx, bson.M{"archived": archived}, &options.FindOptions{
+	cur, err := s.m.Find(ctx, bson.M{"uid": uid, "archived": archived}, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &size,
 		Sort:  bson.M{sort: order},
-	})
+	}) // 只能获取自己的标签
 	if err != nil {
 		return nil, err
 	}
@@ -139,9 +159,13 @@ func (s *Svc) GetHashTags(ctx context.Context, page, size int64, byCreate, desc,
 }
 
 func (s *Svc) GetHashTagByID(ctx context.Context, id primitive.ObjectID) (*HashTag, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	f := func() ([]byte, error) {
 		var tag HashTag
-		err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&tag)
+		err := s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&tag) // 只能获取自己的标签
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				return nil, errHashTagNotFound

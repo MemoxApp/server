@@ -34,8 +34,12 @@ func NewMemorySvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 
 // CheckMemoryExist 检查记忆是否存在
 func (s *Svc) CheckMemoryExist(ctx context.Context, title, content string) (bool, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return false, err
+	}
 	var memory Memory
-	err := s.m.FindOne(ctx, bson.M{"title": title, "content": content}).Decode(&memory)
+	err = s.m.FindOne(ctx, bson.M{"uid": uid, "title": title, "content": content}).Decode(&memory) // 检查自己的记忆
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return false, nil
@@ -74,27 +78,39 @@ func (s *Svc) NewMemory(ctx context.Context, title, content string, tags []primi
 
 // UpdateMemory 更新记忆
 func (s *Svc) UpdateMemory(ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
 	toUpdate := bson.M{"update_time": time.Now().Unix()}
 	for _, f := range opts {
 		toUpdate = f(toUpdate)
 	}
-	_, err := s.m.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": toUpdate})
+	_, err = s.m.UpdateOne(ctx, bson.M{"uid": uid, "_id": id}, bson.M{"$set": toUpdate}) // 只能更新自己的记忆
 	s.c.Del(ctx, fmt.Sprintf("Memory-%s", id.Hex()))
 	return err
 }
 
 // DeleteMemory 删除记忆
 func (s *Svc) DeleteMemory(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "archived": true}) // 只有归档的才能删除
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = s.m.DeleteOne(ctx, bson.M{"uid": uid, "_id": id, "archived": true}) // 只能删除自己的已归档的记忆
 	s.c.Del(ctx, fmt.Sprintf("Memory-%s", id.Hex()))
 	return err
 }
 
 // GetMemory 获取记忆
 func (s *Svc) GetMemory(ctx context.Context, id primitive.ObjectID) (*Memory, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	f := func() ([]byte, error) {
 		var memory Memory
-		err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&memory)
+		err := s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&memory) // 只能获取自己的记忆
 		if err != nil {
 			return nil, err
 		}
@@ -114,6 +130,10 @@ func (s *Svc) GetMemory(ctx context.Context, id primitive.ObjectID) (*Memory, er
 
 // GetMemories 获取记忆列表
 func (s *Svc) GetMemories(ctx context.Context, page, size int64, byCreate, desc, archived bool) ([]*Memory, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var memory []*Memory
 	skip := page * size
 	order := 1
@@ -128,7 +148,7 @@ func (s *Svc) GetMemories(ctx context.Context, page, size int64, byCreate, desc,
 			"create_time": order,
 		}
 	}
-	data, err := s.m.Find(ctx, bson.M{"archived": archived}, &options.FindOptions{
+	data, err := s.m.Find(ctx, bson.M{"uid": uid, "archived": archived}, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &size,
 		Sort:  sort,

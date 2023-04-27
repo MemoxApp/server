@@ -34,8 +34,12 @@ func NewCommentSvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 
 // CheckCommentExist 检查回复是否存在
 func (s *Svc) CheckCommentExist(ctx context.Context, content string) (bool, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return false, err
+	}
 	var comment Comment
-	err := s.m.FindOne(ctx, bson.M{"content": content}).Decode(&comment)
+	err = s.m.FindOne(ctx, bson.M{"uid": uid, "content": content}).Decode(&comment) // 检查自己的回复
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return false, nil
@@ -75,26 +79,38 @@ func (s *Svc) NewComment(ctx context.Context, content string, commentID, parentI
 
 // UpdateComment 更新回复
 func (s *Svc) UpdateComment(ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
 	toUpdate := bson.M{"update_time": time.Now().Unix()}
 	for _, f := range opts {
 		toUpdate = f(toUpdate)
 	}
-	_, err := s.m.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": toUpdate})
+	_, err = s.m.UpdateOne(ctx, bson.M{"uid": uid, "_id": id}, bson.M{"$set": toUpdate}) // 只能更新自己的回复
 	s.c.Del(ctx, fmt.Sprintf("Comment-%s", id.Hex()))
 	return err
 }
 
 // DeleteComment 删除回复
 func (s *Svc) DeleteComment(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "archived": true}) // 只有归档的才能删除
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
 	s.c.Del(ctx, fmt.Sprintf("Comment-%s", id.Hex()))
 	return err
 }
 
 // GetComment 获取回复
 func (s *Svc) GetComment(ctx context.Context, id primitive.ObjectID) (*Comment, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var comment Comment
-	err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&comment)
+	err = s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&comment)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +151,10 @@ func (s *Svc) GetComments(ctx context.Context, parentID string, page, size int64
 
 // GetArchivedComments 获取已归档回复列表
 func (s *Svc) GetArchivedComments(ctx context.Context, page, size int64, byCreate, desc bool) ([]*Comment, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var comment []*Comment
 	skip := page * size
 	order := 1
@@ -149,11 +169,11 @@ func (s *Svc) GetArchivedComments(ctx context.Context, page, size int64, byCreat
 			"create_time": order,
 		}
 	}
-	data, err := s.m.Find(ctx, bson.M{"archived": true}, &options.FindOptions{
+	data, err := s.m.Find(ctx, bson.M{"uid": uid, "archived": true}, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &size,
 		Sort:  sort,
-	})
+	}) // 只能获取自己的归档回复
 	if err != nil {
 		return nil, err
 	}
