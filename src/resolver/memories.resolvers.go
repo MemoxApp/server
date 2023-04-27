@@ -6,13 +6,41 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/exception"
+	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/user"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+// ID is the resolver for the id field.
+func (r *memoryResolver) ID(ctx context.Context, obj *memory.Memory) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// User is the resolver for the user field.
+func (r *memoryResolver) User(ctx context.Context, obj *memory.Memory) (*user.User, error) {
+	u, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// Hashtags is the resolver for the hashtags field.
+func (r *memoryResolver) Hashtags(ctx context.Context, obj *memory.Memory) ([]*hashtag.HashTag, error) {
+	var tags []*hashtag.HashTag
+	for _, t := range obj.HashTags {
+		tag, err := r.hashtagSvc.GetHashTagByID(ctx, t)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
 
 // AddMemory is the resolver for the addMemory field.
 func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMemoryInput) (string, error) {
@@ -24,11 +52,11 @@ func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMem
 	if err != nil {
 		return "", err
 	}
-	memory, err := r.memorySvc.NewMemory(ctx, input.Title, input.Content, tags)
+	newMemory, err := r.memorySvc.NewMemory(ctx, input.Title, input.Content, tags)
 	if err != nil {
 		return "", err
 	}
-	return memory, nil
+	return newMemory, nil
 }
 
 // UpdateMemory is the resolver for the updateMemory field.
@@ -81,21 +109,28 @@ func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool
 }
 
 // AllMemories is the resolver for the allMemories field.
-func (r *queryResolver) AllMemories(ctx context.Context, page int, size int, desc bool) ([]*generated.Memory, error) {
-	panic(fmt.Errorf("not implemented: AllMemories - allMemories"))
-}
-
-// AllMemoriesByCreated is the resolver for the allMemoriesByCreated field.
-func (r *queryResolver) AllMemoriesByCreated(ctx context.Context, page int, size int, desc bool) ([]*generated.Memory, error) {
-	panic(fmt.Errorf("not implemented: AllMemoriesByCreated - allMemoriesByCreated"))
-}
-
-// ArchivedMemories is the resolver for the archivedMemories field.
-func (r *queryResolver) ArchivedMemories(ctx context.Context, page int, size int, desc bool) ([]*generated.Memory, error) {
-	panic(fmt.Errorf("not implemented: ArchivedMemories - archivedMemories"))
+func (r *queryResolver) AllMemories(ctx context.Context, page int, size int, byCreate bool, desc bool, archived bool) ([]*memory.Memory, error) {
+	memories, err := r.memorySvc.GetMemories(ctx, int64(page), int64(size), byCreate, desc, archived)
+	if err != nil {
+		return nil, err
+	}
+	return memories, nil
 }
 
 // Memory is the resolver for the memory field.
-func (r *queryResolver) Memory(ctx context.Context, input string) (*generated.Memory, error) {
-	panic(fmt.Errorf("not implemented: Memory - memory"))
+func (r *queryResolver) Memory(ctx context.Context, input string) (*memory.Memory, error) {
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return nil, exception.ErrInvalidID
+	}
+	m, err := r.memorySvc.GetMemory(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
+
+// Memory returns generated.MemoryResolver implementation.
+func (r *Resolver) Memory() generated.MemoryResolver { return &memoryResolver{r} }
+
+type memoryResolver struct{ *Resolver }

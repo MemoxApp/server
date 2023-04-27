@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 	"time_speak_server/src/exception"
 	"time_speak_server/src/service/cache"
@@ -21,6 +22,7 @@ type Svc struct {
 }
 type Option func(bson.M) bson.M
 
+// NewMemorySvc 创建记忆服务
 func NewMemorySvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 	return &Svc{
 		Config: conf,
@@ -30,6 +32,7 @@ func NewMemorySvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 	}
 }
 
+// CheckMemoryExist 检查记忆是否存在
 func (s *Svc) CheckMemoryExist(ctx context.Context, title, content string) (bool, error) {
 	var memory Memory
 	err := s.m.FindOne(ctx, bson.M{"title": title, "content": content}).Decode(&memory)
@@ -42,6 +45,7 @@ func (s *Svc) CheckMemoryExist(ctx context.Context, title, content string) (bool
 	return true, nil
 }
 
+// NewMemory 创建记忆
 func (s *Svc) NewMemory(ctx context.Context, title, content string, tags []primitive.ObjectID) (string, error) {
 	exist, err := s.CheckMemoryExist(ctx, title, content)
 	if err != nil {
@@ -68,6 +72,7 @@ func (s *Svc) NewMemory(ctx context.Context, title, content string, tags []primi
 	return memory.ObjectID.Hex(), err
 }
 
+// UpdateMemory 更新记忆
 func (s *Svc) UpdateMemory(ctx context.Context, id primitive.ObjectID, opts ...Option) error {
 	toUpdate := bson.M{"update_time": time.Now().Unix()}
 	for _, f := range opts {
@@ -77,12 +82,15 @@ func (s *Svc) UpdateMemory(ctx context.Context, id primitive.ObjectID, opts ...O
 	s.c.Del(ctx, fmt.Sprintf("Memory-%s", id.Hex()))
 	return err
 }
+
+// DeleteMemory 删除记忆
 func (s *Svc) DeleteMemory(ctx context.Context, id primitive.ObjectID) error {
 	_, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "archived": true}) // 只有归档的才能删除
 	s.c.Del(ctx, fmt.Sprintf("Memory-%s", id.Hex()))
 	return err
 }
 
+// GetMemory 获取记忆
 func (s *Svc) GetMemory(ctx context.Context, id primitive.ObjectID) (*Memory, error) {
 	f := func() ([]byte, error) {
 		var memory Memory
@@ -104,6 +112,38 @@ func (s *Svc) GetMemory(ctx context.Context, id primitive.ObjectID) (*Memory, er
 	return &memory, nil
 }
 
+// GetMemories 获取记忆列表
+func (s *Svc) GetMemories(ctx context.Context, page, size int64, byCreate, desc, archived bool) ([]*Memory, error) {
+	var memory []*Memory
+	skip := page * size
+	order := 1
+	if desc {
+		order = -1
+	}
+	sort := bson.M{
+		"update_time": order,
+	}
+	if byCreate {
+		sort = bson.M{
+			"create_time": order,
+		}
+	}
+	data, err := s.m.Find(ctx, bson.M{"archived": archived}, &options.FindOptions{
+		Skip:  &skip,
+		Limit: &size,
+		Sort:  sort,
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = data.All(ctx, &memory)
+	if err != nil {
+		return nil, err
+	}
+	return memory, nil
+}
+
+// WithTitle 设置标题
 func WithTitle(t string) Option {
 	return func(m bson.M) bson.M {
 		m["title"] = t
@@ -111,6 +151,7 @@ func WithTitle(t string) Option {
 	}
 }
 
+// WithArchived 设置归档
 func WithArchived(t bool) Option {
 	return func(m bson.M) bson.M {
 		m["archived"] = t
@@ -118,12 +159,15 @@ func WithArchived(t bool) Option {
 	}
 }
 
+// WithContent 设置内容
 func WithContent(t string) Option {
 	return func(m bson.M) bson.M {
 		m["content"] = t
 		return m
 	}
 }
+
+// WithTags 设置话题
 func WithTags(t []primitive.ObjectID) Option {
 	return func(m bson.M) bson.M {
 		m["hash_tags"] = t

@@ -3,15 +3,9 @@ extend type Query {
     allMemories(
         page: Int!,
         size: Int!,
-        desc: Boolean! = true
-    ):[Memory]! @auth
-    "所有Memories，按创建时间排序，默认降序"
-    allMemoriesByCreated(page:Int!,size:Int!,desc:Boolean!=true):[Memory]! @auth
-    "所有的归档Memories，按归档时间(update_time)排序，默认降序"
-    archivedMemories(
-        page: Int!,
-        size: Int!,
-        desc: Boolean! = true
+        byCreate: Boolean! = false,
+        desc: Boolean! = true,
+        archived: Boolean! = false,
     ):[Memory]! @auth
     "Memory 详情"
     memory(input: ID!): Memory! @auth
