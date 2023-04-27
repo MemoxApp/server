@@ -123,14 +123,13 @@ type ComplexityRoot struct {
 
 	Query struct {
 		AllComments   func(childComplexity int, id string, page int, size int, desc bool) int
-		AllHashTags   func(childComplexity int, page int, size int, desc bool) int
+		AllHashTags   func(childComplexity int, input ListInput) int
 		AllHistories  func(childComplexity int, id string, page int, size int, desc bool) int
-		AllMemories   func(childComplexity int, page int, size int, byCreate bool, desc bool, archived bool) int
+		AllMemories   func(childComplexity int, input ListInput) int
 		AllResources  func(childComplexity int, page int, size int, desc bool) int
 		AllSubscribes func(childComplexity int) int
 		Comments      func(childComplexity int, input string) int
 		CurrentUser   func(childComplexity int) int
-		HashTags      func(childComplexity int, input string) int
 		Memory        func(childComplexity int, input string) int
 	}
 
@@ -213,10 +212,9 @@ type MutationResolver interface {
 type QueryResolver interface {
 	AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*Comment, error)
 	Comments(ctx context.Context, input string) ([]*Comment, error)
-	AllHashTags(ctx context.Context, page int, size int, desc bool) ([]*hashtag.HashTag, error)
-	HashTags(ctx context.Context, input string) ([]*memory.Memory, error)
+	AllHashTags(ctx context.Context, input ListInput) ([]*hashtag.HashTag, error)
 	AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error)
-	AllMemories(ctx context.Context, page int, size int, byCreate bool, desc bool, archived bool) ([]*memory.Memory, error)
+	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
 	Memory(ctx context.Context, input string) (*memory.Memory, error)
 	AllResources(ctx context.Context, page int, size int, desc bool) ([]*Resource, error)
 	AllSubscribes(ctx context.Context) ([]*Subscribe, error)
@@ -716,7 +714,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AllHashTags(childComplexity, args["page"].(int), args["size"].(int), args["desc"].(bool)), true
+		return e.complexity.Query.AllHashTags(childComplexity, args["input"].(ListInput)), true
 
 	case "Query.allHistories":
 		if e.complexity.Query.AllHistories == nil {
@@ -740,7 +738,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AllMemories(childComplexity, args["page"].(int), args["size"].(int), args["byCreate"].(bool), args["desc"].(bool), args["archived"].(bool)), true
+		return e.complexity.Query.AllMemories(childComplexity, args["input"].(ListInput)), true
 
 	case "Query.allResources":
 		if e.complexity.Query.AllResources == nil {
@@ -779,18 +777,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.CurrentUser(childComplexity), true
-
-	case "Query.hashTags":
-		if e.complexity.Query.HashTags == nil {
-			break
-		}
-
-		args, err := ec.field_Query_hashTags_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.HashTags(childComplexity, args["input"].(string)), true
 
 	case "Query.memory":
 		if e.complexity.Query.Memory == nil {
@@ -991,6 +977,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCommentInput,
 		ec.unmarshalInputForgetInput,
 		ec.unmarshalInputHashTagInput,
+		ec.unmarshalInputListInput,
 		ec.unmarshalInputLoginInput,
 		ec.unmarshalInputRegisterInput,
 		ec.unmarshalInputResourceInput,
@@ -1142,12 +1129,8 @@ input CommentInput {
 	{Name: "../schema/hashtags.graphql", Input: `extend type Query {
     "所有HashTags，按修改时间排序，默认降序"
     allHashTags(
-        page: Int!,
-        size: Int!,
-        desc: Boolean! = true
+        input: ListInput!
     ):[HashTag]! @auth
-    "指定 HashTag 下的所有帖子"
-    hashTags(input: ID!): [Memory]! @auth
 }
 
 extend type Mutation {
@@ -1171,8 +1154,12 @@ type HashTag {
 }
 
 input HashTagInput {
+    "ID"
+    id: ID!
     "名称"
-    name: String!
+    name: String
+    "是否已归档"
+    archived: Boolean
 }
 `, BuiltIn: false},
 	{Name: "../schema/histories.graphql", Input: `extend type Query {
@@ -1204,13 +1191,7 @@ type History {
 }`, BuiltIn: false},
 	{Name: "../schema/memories.graphql", Input: `extend type Query {
     "所有Memories，按修改时间排序，默认降序"
-    allMemories(
-        page: Int!,
-        size: Int!,
-        byCreate: Boolean! = false,
-        desc: Boolean! = true,
-        archived: Boolean! = false,
-    ):[Memory]! @auth
+    allMemories(input: ListInput!):[Memory]! @auth
     "Memory 详情"
     memory(input: ID!): Memory! @auth
 }
@@ -1324,7 +1305,15 @@ directive @auth on FIELD_DEFINITION | OBJECT
 "仅用于代码生成时强制单独resolver"
 directive @goField(
     forceResolver: Boolean
-) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION`, BuiltIn: false},
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+input ListInput {
+    page: Int!
+    size: Int!
+    byCreate: Boolean! = false
+    desc: Boolean! = true
+    archived: Boolean! = false
+}`, BuiltIn: false},
 	{Name: "../schema/subscribes.graphql", Input: `extend type Query {
     "所有Subscribes"
     allSubscribes:[Subscribe]! @auth
@@ -1745,33 +1734,15 @@ func (ec *executionContext) field_Query_allComments_args(ctx context.Context, ra
 func (ec *executionContext) field_Query_allHashTags_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 ListInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["page"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["size"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["size"] = arg1
-	var arg2 bool
-	if tmp, ok := rawArgs["desc"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
-		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["desc"] = arg2
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1820,51 +1791,15 @@ func (ec *executionContext) field_Query_allHistories_args(ctx context.Context, r
 func (ec *executionContext) field_Query_allMemories_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 ListInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["page"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["size"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["size"] = arg1
-	var arg2 bool
-	if tmp, ok := rawArgs["byCreate"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("byCreate"))
-		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["byCreate"] = arg2
-	var arg3 bool
-	if tmp, ok := rawArgs["desc"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
-		arg3, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["desc"] = arg3
-	var arg4 bool
-	if tmp, ok := rawArgs["archived"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
-		arg4, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["archived"] = arg4
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1902,21 +1837,6 @@ func (ec *executionContext) field_Query_allResources_args(ctx context.Context, r
 }
 
 func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_hashTags_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -5096,7 +5016,7 @@ func (ec *executionContext) _Query_allHashTags(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().AllHashTags(rctx, fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
+			return ec.resolvers.Query().AllHashTags(rctx, fc.Args["input"].(ListInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -5164,99 +5084,6 @@ func (ec *executionContext) fieldContext_Query_allHashTags(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_allHashTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_hashTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_hashTags(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().HashTags(rctx, fc.Args["input"].(string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*memory.Memory); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/memory.Memory`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*memory.Memory)
-	fc.Result = res
-	return ec.marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_hashTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Memory_id(ctx, field)
-			case "user":
-				return ec.fieldContext_Memory_user(ctx, field)
-			case "title":
-				return ec.fieldContext_Memory_title(ctx, field)
-			case "content":
-				return ec.fieldContext_Memory_content(ctx, field)
-			case "hashtags":
-				return ec.fieldContext_Memory_hashtags(ctx, field)
-			case "archived":
-				return ec.fieldContext_Memory_archived(ctx, field)
-			case "create_time":
-				return ec.fieldContext_Memory_create_time(ctx, field)
-			case "update_time":
-				return ec.fieldContext_Memory_update_time(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Memory", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_hashTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5369,7 +5196,7 @@ func (ec *executionContext) _Query_allMemories(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().AllMemories(rctx, fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["byCreate"].(bool), fc.Args["desc"].(bool), fc.Args["archived"].(bool))
+			return ec.resolvers.Query().AllMemories(rctx, fc.Args["input"].(ListInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -8962,18 +8789,104 @@ func (ec *executionContext) unmarshalInputHashTagInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name"}
+	fieldsInOrder := [...]string{"id", "name", "archived"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "name":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputListInput(ctx context.Context, obj interface{}) (ListInput, error) {
+	var it ListInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["byCreate"]; !present {
+		asMap["byCreate"] = false
+	}
+	if _, present := asMap["desc"]; !present {
+		asMap["desc"] = true
+	}
+	if _, present := asMap["archived"]; !present {
+		asMap["archived"] = false
+	}
+
+	fieldsInOrder := [...]string{"page", "size", "byCreate", "desc", "archived"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "page":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+			it.Page, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "size":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
+			it.Size, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "byCreate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("byCreate"))
+			it.ByCreate, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "desc":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
+			it.Desc, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "archived":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
+			it.Archived, err = ec.unmarshalNBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9966,29 +9879,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "hashTags":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_hashTags(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return rrm(innerCtx)
-			})
 		case "allHistories":
 			field := field
 
@@ -10945,6 +10835,11 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx context.Context, v interface{}) (ListInput, error) {
+	res, err := ec.unmarshalInputListInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNLoginInput2time_speak_serverᚋgraphᚋgeneratedᚐLoginInput(ctx context.Context, v interface{}) (LoginInput, error) {

@@ -6,11 +6,13 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
+	"time_speak_server/src/opts"
 	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/user"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ID is the resolver for the id field.
@@ -29,22 +31,41 @@ func (r *hashTagResolver) User(ctx context.Context, obj *hashtag.HashTag) (*user
 
 // UpdateHashTag is the resolver for the updateHashTag field.
 func (r *mutationResolver) UpdateHashTag(ctx context.Context, input generated.HashTagInput) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpdateHashTag - updateHashTag"))
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	var toUpdate []opts.Option
+	if input.Name != nil {
+		toUpdate = append(toUpdate, opts.With("name", *input.Name))
+	}
+	if input.Archived != nil {
+		toUpdate = append(toUpdate, opts.WithArchived(*input.Archived))
+	}
+	if len(toUpdate) == 0 {
+		return true, nil
+	}
+	err = r.hashtagSvc.UpdateHashTag(ctx, id, toUpdate...)
+	return true, nil
 }
 
 // DeleteHashTag is the resolver for the deleteHashTag field.
 func (r *mutationResolver) DeleteHashTag(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteHashTag - deleteHashTag"))
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	err = r.hashtagSvc.DeleteHashTag(ctx, id)
+	return true, nil
 }
 
 // AllHashTags is the resolver for the allHashTags field.
-func (r *queryResolver) AllHashTags(ctx context.Context, page int, size int, desc bool) ([]*hashtag.HashTag, error) {
-	panic(fmt.Errorf("not implemented: AllHashTags - allHashTags"))
-}
-
-// HashTags is the resolver for the hashTags field.
-func (r *queryResolver) HashTags(ctx context.Context, input string) ([]*memory.Memory, error) {
-	panic(fmt.Errorf("not implemented: HashTags - hashTags"))
+func (r *queryResolver) AllHashTags(ctx context.Context, input generated.ListInput) ([]*hashtag.HashTag, error) {
+	tags, err := r.hashtagSvc.GetHashTags(ctx, int64(input.Page), int64(input.Size), input.ByCreate, input.Desc, input.Archived)
+	if err != nil {
+		return nil, err
+	}
+	return tags, nil
 }
 
 // HashTag returns generated.HashTagResolver implementation.
