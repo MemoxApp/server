@@ -15,16 +15,20 @@ Talk to time, talk to self.
 
 时光语，意喻时间和回忆，代表与过去的自己对话。时光流淌，一切皆有答案。
 
+# API 及开发文档
+
+详见 [docs/API.md](docs/API.md)
+
 # 项目进度
 
 - [x] 功能设计
 - [x] 架构设计
 - [x] 登录注册
-- [ ] Memory
-- [ ] HashTag
-- [ ] Comment
-- [ ] History
-- [ ] Subscribe
-- [ ] Admin
+- [x] Memory
+- [x] HashTag
+- [x] Comment
+- [x] History
+- [x] Subscribe
+- [x] Resource
 - [ ] User
-- [ ] Resource
+- [ ] Admin
