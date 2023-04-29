@@ -1,8 +1,6 @@
 # API 文档
 
-以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](graph/schema) 查看全部接口
-
-[TOC]
+以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
 
 ## Account
 
