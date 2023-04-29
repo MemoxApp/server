@@ -10,11 +10,17 @@ import (
 	"time_speak_server/src/service/mail"
 	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/resource"
+	"time_speak_server/src/service/storage"
 	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 )
 
 type ContextKey string
+
+const (
+	VersionName = "0.1.0"
+	VersionCode = 1
+)
 
 type Config struct {
 	App       app              `yaml:"app"`
@@ -28,12 +34,12 @@ type Config struct {
 	Comment   comment.Config   `yaml:"comment"`
 	Subscribe subscribe.Config `yaml:"subscribe"`
 	Resource  resource.Config  `yaml:"resource"`
+	Storage   storage.Config   `yaml:"storage"`
 }
 
 type app struct {
-	Addr   string `yaml:"addr"`
-	Host   string `yaml:"host"`
-	Prefix string `yaml:"prefix"`
+	Addr string `yaml:"addr"`
+	Host string `yaml:"host"`
 }
 
 type db struct {

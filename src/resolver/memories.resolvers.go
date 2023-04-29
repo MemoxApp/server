@@ -54,8 +54,9 @@ func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMem
 		return "", err
 	}
 	newMemory, err := r.memorySvc.NewMemory(ctx, input.Title, input.Content, tags)
+	err = r.resourceSvc.UpdateReferences(ctx, "", input.Content, newMemory)
 	if err != nil {
-		return "", err
+		return newMemory, err
 	}
 	return newMemory, nil
 }
@@ -84,7 +85,25 @@ func (r *mutationResolver) UpdateMemory(ctx context.Context, input generated.Upd
 	if len(toUpdate) == 0 {
 		return true, nil
 	}
+	oldMemory, err := r.memorySvc.GetMemory(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	// 更新 History
+	_, err = r.historySvc.NewHistory(ctx, oldMemory)
+	if err != nil {
+		return false, err
+	}
+	// 更新 Resource
+	err = r.resourceSvc.UpdateReferences(ctx, oldMemory.Content, input.Content, input.ID)
+	if err != nil {
+		return false, err
+	}
+	// 更新 Memory
 	err = r.memorySvc.UpdateMemory(ctx, id, toUpdate...)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -105,15 +124,29 @@ func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	oldMemory, err := r.memorySvc.GetMemory(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	err = r.memorySvc.DeleteMemory(ctx, id)
+	err = r.resourceSvc.UpdateReferences(ctx, oldMemory.Content, "", input)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
 // AllMemories is the resolver for the allMemories field.
 func (r *queryResolver) AllMemories(ctx context.Context, input generated.ListInput) ([]*memory.Memory, error) {
-	memories, err := r.memorySvc.GetMemories(ctx, int64(input.Page), int64(input.Size), input.ByCreate, input.Desc, input.Archived)
+	memories, err := r.memorySvc.GetMemories(ctx, input.Page, input.Size, input.ByCreate, input.Desc, input.Archived)
 	if err != nil {
 		return nil, err
+	}
+	for _, m := range memories {
+		m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return memories, nil
 }
@@ -125,6 +158,10 @@ func (r *queryResolver) Memory(ctx context.Context, input string) (*memory.Memor
 		return nil, exception.ErrInvalidID
 	}
 	m, err := r.memorySvc.GetMemory(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content)
 	if err != nil {
 		return nil, err
 	}

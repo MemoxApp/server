@@ -6,26 +6,98 @@ package resolver
 
 import (
 	"context"
-	"fmt"
+	"strings"
 	"time_speak_server/graph/generated"
+	"time_speak_server/src/exception"
+	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/resource"
+	"time_speak_server/src/service/storage/utils"
+	"time_speak_server/src/service/user"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-// AddResource is the resolver for the addResource field.
-func (r *mutationResolver) AddResource(ctx context.Context, input generated.ResourceInput) (*generated.UploadTokenPayload, error) {
-	panic(fmt.Errorf("not implemented: AddResource - addResource"))
-}
-
-// ArchiveResource is the resolver for the archiveResource field.
-func (r *mutationResolver) ArchiveResource(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: ArchiveResource - archiveResource"))
-}
 
 // DeleteResource is the resolver for the deleteResource field.
 func (r *mutationResolver) DeleteResource(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteResource - deleteResource"))
+	id, err := primitive.ObjectIDFromHex(input)
+	if err != nil {
+		return false, exception.ErrInvalidID
+	}
+	err = r.resourceSvc.DeleteResource(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// GetToken is the resolver for the getToken field.
+func (r *mutationResolver) GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error) {
+	token, err := r.storageSvc.GetToken(ctx, fileName)
+	userID, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	absPath := utils.GeneratePath(userID.Hex(), fileName)
+	_, err = r.resourceSvc.NewResource(ctx, absPath, 0)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+// LocalUpload is the resolver for the localUpload field.
+func (r *mutationResolver) LocalUpload(ctx context.Context, input generated.LocalUploadInput) (string, error) {
+	if strings.ToLower(r.conf.Storage.StorageProvider) == "local" {
+		return r.resourceSvc.LocalUpload(ctx, input.SessionToken, input.Upload)
+	}
+	return "", exception.ErrInvalidStorageProvider
 }
 
 // AllResources is the resolver for the allResources field.
-func (r *queryResolver) AllResources(ctx context.Context, page int, size int, desc bool) ([]*generated.Resource, error) {
-	panic(fmt.Errorf("not implemented: AllResources - allResources"))
+func (r *queryResolver) AllResources(ctx context.Context, page int64, size int64, byCreate bool, desc bool) ([]*resource.Resource, error) {
+	userID, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resources, err := r.resourceSvc.GetResources(ctx, userID, page, size, byCreate, desc)
+	if err != nil {
+		return nil, err
+	}
+	return resources, nil
 }
+
+// ID is the resolver for the id field.
+func (r *resourceResolver) ID(ctx context.Context, obj *resource.Resource) (string, error) {
+	return obj.ObjectID.Hex(), nil
+}
+
+// User is the resolver for the user field.
+func (r *resourceResolver) User(ctx context.Context, obj *resource.Resource) (*user.User, error) {
+	u, err := r.userSvc.GetUser(ctx, obj.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// Memories is the resolver for the memories field.
+func (r *resourceResolver) Memories(ctx context.Context, obj *resource.Resource) ([]*memory.Memory, error) {
+	memoryIDs := obj.Ref
+	var memories []*memory.Memory
+	for _, id := range memoryIDs {
+		m, err := r.memorySvc.GetMemory(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		memories = append(memories, m)
+	}
+	return memories, nil
+}
+
+// Resource returns generated.ResourceResolver implementation.
+func (r *Resolver) Resource() generated.ResourceResolver { return &resourceResolver{r} }
+
+type resourceResolver struct{ *Resolver }

@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
+	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/user"
 )
 
@@ -25,7 +26,7 @@ func NewHistorySvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 	}
 }
 
-func (s *Svc) NewHistory(ctx context.Context, title, content string, tags []primitive.ObjectID) (string, error) {
+func (s *Svc) NewHistory(ctx context.Context, oldMemory *memory.Memory) (string, error) {
 	id, err := user.GetUserFromJwt(ctx)
 	if err != nil {
 		return "", err
@@ -33,9 +34,10 @@ func (s *Svc) NewHistory(ctx context.Context, title, content string, tags []prim
 	history := History{
 		ObjectID:   primitive.NewObjectID(),
 		Uid:        id,
-		Title:      title,
-		Content:    content,
-		HashTags:   tags,
+		MemoryID:   oldMemory.ObjectID,
+		Title:      oldMemory.Title,
+		Content:    oldMemory.Content,
+		HashTags:   oldMemory.HashTags,
 		CreateTime: time.Now().Unix(),
 	}
 	_, err = s.m.InsertOne(ctx, history)

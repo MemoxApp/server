@@ -10,6 +10,8 @@ import (
 	"time_speak_server/src/service/mail"
 	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/resource"
+	"time_speak_server/src/service/storage"
+	"time_speak_server/src/service/storage/utils"
 	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 )
@@ -30,9 +32,11 @@ type Resolver struct {
 	commentSvc   *comment.Svc
 	subscribeSvc *subscribe.Svc
 	resourceSvc  *resource.Svc
+	storageSvc   utils.Service
 }
 
 func NewResolver(conf config.Config, db *mongo.Database, r *redis.Client) *Resolver {
+	sto := storage.NewStorageSvc(conf.Storage, r)
 	return &Resolver{
 		conf:         conf,
 		db:           db,
@@ -44,6 +48,7 @@ func NewResolver(conf config.Config, db *mongo.Database, r *redis.Client) *Resol
 		historySvc:   history.NewHistorySvc(conf.History, db, r),
 		commentSvc:   comment.NewCommentSvc(conf.Comment, db, r),
 		subscribeSvc: subscribe.NewSubscribeSvc(conf.Subscribe, db, r),
-		resourceSvc:  resource.NewResourceSvc(conf.Resource, db, r),
+		storageSvc:   sto,
+		resourceSvc:  resource.NewResourceSvc(conf.Resource, db, r, sto),
 	}
 }

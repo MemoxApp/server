@@ -37,7 +37,7 @@ func (r *mutationResolver) UpdateHashTag(ctx context.Context, input generated.Ha
 	}
 	var toUpdate []opts.Option
 	if input.Name != nil {
-		toUpdate = append(toUpdate, opts.With("name", *input.Name))
+		toUpdate = append(toUpdate, opts.WithString("name", *input.Name))
 	}
 	if input.Archived != nil {
 		toUpdate = append(toUpdate, opts.WithArchived(*input.Archived))
@@ -61,7 +61,7 @@ func (r *mutationResolver) DeleteHashTag(ctx context.Context, input string) (boo
 
 // AllHashTags is the resolver for the allHashTags field.
 func (r *queryResolver) AllHashTags(ctx context.Context, input generated.ListInput) ([]*hashtag.HashTag, error) {
-	tags, err := r.hashtagSvc.GetHashTags(ctx, int64(input.Page), int64(input.Size), input.ByCreate, input.Desc, input.Archived)
+	tags, err := r.hashtagSvc.GetHashTags(ctx, input.Page, input.Size, input.ByCreate, input.Desc, input.Archived)
 	if err != nil {
 		return nil, err
 	}

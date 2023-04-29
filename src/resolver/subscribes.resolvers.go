@@ -34,7 +34,7 @@ func (r *mutationResolver) UpdateSubscribe(ctx context.Context, input generated.
 	}
 	var toUpdate []opts.Option
 	if input.Name != nil && len(*input.Name) > 0 {
-		toUpdate = append(toUpdate, opts.With("name", *input.Name))
+		toUpdate = append(toUpdate, opts.WithString("name", *input.Name))
 	}
 	if input.Enable != nil {
 		toUpdate = append(toUpdate, opts.WithArchived(*input.Enable))

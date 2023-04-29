@@ -24,6 +24,8 @@ autobind:
   - "time_speak_server/src/service/history"
   - "time_speak_server/src/service/comment"
   - "time_speak_server/src/service/subscribe"
+  - "time_speak_server/src/service/resource"
+  - "time_speak_server/src/service/storage/utils"
 
 models:
   ID:

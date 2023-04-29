@@ -3,8 +3,7 @@
 package generated
 
 import (
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/user"
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type AddCommentInput struct {
@@ -49,11 +48,18 @@ type HashTagInput struct {
 }
 
 type ListInput struct {
-	Page     int  `json:"page"`
-	Size     int  `json:"size"`
-	ByCreate bool `json:"byCreate"`
-	Desc     bool `json:"desc"`
-	Archived bool `json:"archived"`
+	Page     int64 `json:"page"`
+	Size     int64 `json:"size"`
+	ByCreate bool  `json:"byCreate"`
+	Desc     bool  `json:"desc"`
+	Archived bool  `json:"archived"`
+}
+
+type LocalUploadInput struct {
+	// SessionToken
+	SessionToken string `json:"session_token"`
+	// 文件上传
+	Upload graphql.Upload `json:"upload"`
 }
 
 type LoginInput struct {
@@ -75,31 +81,18 @@ type RegisterInput struct {
 	EmailVerifyCode string `json:"email_verify_code"`
 }
 
-type Resource struct {
-	// Resource ID
-	ID string `json:"id"`
-	// 资源路径
-	Path string `json:"path"`
-	// 创建用户
-	User *user.User `json:"user"`
-	// 大小(Byte)
-	Size int `json:"size"`
-	// 引用该资源的 Memories
-	Memories []*memory.Memory `json:"memories"`
-	// 是否已归档
-	Archived bool `json:"archived"`
-	// 创建时间
-	CreateTime int64 `json:"create_time"`
-}
-
-type ResourceInput struct {
-	// 文件名
-	FileName string `json:"file_name"`
-}
-
 type SendEmailCodeInput struct {
 	Mail     string `json:"mail"`
 	Register bool   `json:"register"`
+}
+
+type ServerStatus struct {
+	// 服务器 Version Code
+	VersionCode int `json:"version_code"`
+	// 服务器 Version Name
+	VersionName string `json:"version_name"`
+	// 服务器存储服务 Provider
+	StorageProvider string `json:"storage_provider"`
 }
 
 type UpdateCommentInput struct {
@@ -129,13 +122,4 @@ type UpdateSubscribeInput struct {
 	Capacity *int64 `json:"capacity,omitempty"`
 	// 是否启用
 	Enable *bool `json:"enable,omitempty"`
-}
-
-type UploadTokenPayload struct {
-	// 上传凭证
-	Token string `json:"token"`
-	// 相对路径
-	Path string `json:"path"`
-	// URL
-	URL string `json:"url"`
 }

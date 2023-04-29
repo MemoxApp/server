@@ -1,16 +1,18 @@
 extend type Query {
     "用户的所有Resources，按创建时间排序，默认降序"
     allResources(
-        page: Int!,
-        size: Int!,
+        page: Int64!
+        size: Int64!
+        byCreate: Boolean! = false
         desc: Boolean! = true
     ):[Resource]! @auth
 }
 
 extend type Mutation {
-    addResource(input: ResourceInput!): UploadTokenPayload! @auth
-    archiveResource(input: ID!): Boolean! @auth
     deleteResource(input: ID!): Boolean! @auth
+    getToken(fileName: String!): UploadTokenPayload! @auth
+    "本地上传，直接上传至Server，仅在StorageProvider类型为local可用"
+    localUpload(input: LocalUploadInput!): String! @auth
 }
 
 type Resource {
@@ -24,23 +26,25 @@ type Resource {
     size: Int!
     "引用该资源的 Memories"
     memories: [Memory]!
-    "是否已归档"
-    archived: Boolean!
     "创建时间"
     create_time: DateTime!
 }
 
-input ResourceInput {
-    "文件名"
-    file_name: String!
-}
-
 
 type UploadTokenPayload {
-    "上传凭证"
-    token: String!
-    "相对路径"
-    path: String!
-    "URL"
-    url: String!
+    "用于STS凭证访问的AK"
+    access_key: String!
+    "用于STS凭证访问的SK"
+    secret_access_key: String!
+    "SessionToken，使用STS凭证访问时必须携带"
+    session_token: String!
+    "UserId"
+    user_id    : String!
+}
+
+input LocalUploadInput{
+    "SessionToken"
+    session_token: String!
+    "文件上传"
+    upload: Upload!
 }

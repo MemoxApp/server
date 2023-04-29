@@ -18,7 +18,6 @@ import (
 )
 
 func GraphqlHandler(conf config.Config, db *mongo.Database, redis *redis.Client) gin.HandlerFunc {
-
 	c := generated.Config{
 		Resolvers:  resolver.NewResolver(conf, db, redis),
 		Directives: generated.DirectiveRoot{Auth: user.GqlAuth, Admin: user.GqlAdmin},

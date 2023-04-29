@@ -10,6 +10,9 @@ import (
 	"time_speak_server/src/config"
 	"time_speak_server/src/db"
 	"time_speak_server/src/log"
+	"time_speak_server/src/service/resource"
+	"time_speak_server/src/service/storage"
+	"time_speak_server/src/service/storage/bce"
 )
 
 func main() {
@@ -29,9 +32,13 @@ func main() {
 		return
 	}
 
+	sto := storage.NewStorageSvc(conf.Storage, redis)
+	resourceSvc := resource.NewResourceSvc(conf.Resource, database, redis, sto)
+
 	r := gin.Default()
 	r.POST("/query", graph.GraphqlHandler(conf, database, redis))
 	r.GET("/", graph.PlaygroundHandler())
+	r.POST("/notify/bce", bce.Callback(resourceSvc))
 	err = r.Run()
 	if err != nil {
 		panic(err)

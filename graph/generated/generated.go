@@ -14,6 +14,8 @@ import (
 	"time_speak_server/src/service/hashtag"
 	"time_speak_server/src/service/history"
 	"time_speak_server/src/service/memory"
+	"time_speak_server/src/service/resource"
+	"time_speak_server/src/service/storage/utils"
 	"time_speak_server/src/service/subscribe"
 	"time_speak_server/src/service/user"
 
@@ -47,6 +49,7 @@ type ResolverRoot interface {
 	Memory() MemoryResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Resource() ResourceResolver
 	SubComment() SubCommentResolver
 	Subscribe() SubscribeResolver
 	User() UserResolver
@@ -110,16 +113,16 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddComment      func(childComplexity int, input AddCommentInput) int
 		AddMemory       func(childComplexity int, input AddMemoryInput) int
-		AddResource     func(childComplexity int, input ResourceInput) int
 		AddSubscribe    func(childComplexity int, input AddSubscribeInput) int
 		ArchiveMemory   func(childComplexity int, input string, archived bool) int
-		ArchiveResource func(childComplexity int, input string) int
 		DeleteComment   func(childComplexity int, input string) int
 		DeleteHashTag   func(childComplexity int, input string) int
 		DeleteMemory    func(childComplexity int, input string) int
 		DeleteResource  func(childComplexity int, input string) int
 		DeleteSubscribe func(childComplexity int, input string) int
 		Forget          func(childComplexity int, input ForgetInput) int
+		GetToken        func(childComplexity int, fileName string) int
+		LocalUpload     func(childComplexity int, input LocalUploadInput) int
 		Login           func(childComplexity int, input LoginInput) int
 		Register        func(childComplexity int, input RegisterInput) int
 		SendEmailCode   func(childComplexity int, input SendEmailCodeInput) int
@@ -134,21 +137,27 @@ type ComplexityRoot struct {
 		AllHashTags   func(childComplexity int, input ListInput) int
 		AllHistories  func(childComplexity int, id string, page int, size int, desc bool) int
 		AllMemories   func(childComplexity int, input ListInput) int
-		AllResources  func(childComplexity int, page int, size int, desc bool) int
+		AllResources  func(childComplexity int, page int64, size int64, byCreate bool, desc bool) int
 		AllSubscribes func(childComplexity int) int
 		CurrentUser   func(childComplexity int) int
 		Memory        func(childComplexity int, input string) int
+		Status        func(childComplexity int) int
 		SubComments   func(childComplexity int, id string, page int, size int, desc bool) int
 	}
 
 	Resource struct {
-		Archived   func(childComplexity int) int
 		CreateTime func(childComplexity int) int
 		ID         func(childComplexity int) int
 		Memories   func(childComplexity int) int
 		Path       func(childComplexity int) int
 		Size       func(childComplexity int) int
 		User       func(childComplexity int) int
+	}
+
+	ServerStatus struct {
+		StorageProvider func(childComplexity int) int
+		VersionCode     func(childComplexity int) int
+		VersionName     func(childComplexity int) int
 	}
 
 	SubComment struct {
@@ -172,9 +181,10 @@ type ComplexityRoot struct {
 	}
 
 	UploadTokenPayload struct {
-		Path  func(childComplexity int) int
-		Token func(childComplexity int) int
-		URL   func(childComplexity int) int
+		AccessKey       func(childComplexity int) int
+		SecretAccessKey func(childComplexity int) int
+		SessionToken    func(childComplexity int) int
+		UserID          func(childComplexity int) int
 	}
 
 	User struct {
@@ -229,9 +239,9 @@ type MutationResolver interface {
 	UpdateMemory(ctx context.Context, input UpdateMemoryInput) (bool, error)
 	ArchiveMemory(ctx context.Context, input string, archived bool) (bool, error)
 	DeleteMemory(ctx context.Context, input string) (bool, error)
-	AddResource(ctx context.Context, input ResourceInput) (*UploadTokenPayload, error)
-	ArchiveResource(ctx context.Context, input string) (bool, error)
 	DeleteResource(ctx context.Context, input string) (bool, error)
+	GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error)
+	LocalUpload(ctx context.Context, input LocalUploadInput) (string, error)
 	AddSubscribe(ctx context.Context, input AddSubscribeInput) (string, error)
 	UpdateSubscribe(ctx context.Context, input UpdateSubscribeInput) (bool, error)
 	DeleteSubscribe(ctx context.Context, input string) (bool, error)
@@ -243,9 +253,17 @@ type QueryResolver interface {
 	AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error)
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
 	Memory(ctx context.Context, input string) (*memory.Memory, error)
-	AllResources(ctx context.Context, page int, size int, desc bool) ([]*Resource, error)
+	AllResources(ctx context.Context, page int64, size int64, byCreate bool, desc bool) ([]*resource.Resource, error)
+	Status(ctx context.Context) (*ServerStatus, error)
 	AllSubscribes(ctx context.Context) ([]*subscribe.Subscribe, error)
 	CurrentUser(ctx context.Context) (*user.User, error)
+}
+type ResourceResolver interface {
+	ID(ctx context.Context, obj *resource.Resource) (string, error)
+
+	User(ctx context.Context, obj *resource.Resource) (*user.User, error)
+
+	Memories(ctx context.Context, obj *resource.Resource) ([]*memory.Memory, error)
 }
 type SubCommentResolver interface {
 	ID(ctx context.Context, obj *comment.Comment) (string, error)
@@ -541,18 +559,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AddMemory(childComplexity, args["input"].(AddMemoryInput)), true
 
-	case "Mutation.addResource":
-		if e.complexity.Mutation.AddResource == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addResource_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddResource(childComplexity, args["input"].(ResourceInput)), true
-
 	case "Mutation.addSubscribe":
 		if e.complexity.Mutation.AddSubscribe == nil {
 			break
@@ -576,18 +582,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ArchiveMemory(childComplexity, args["input"].(string), args["archived"].(bool)), true
-
-	case "Mutation.archiveResource":
-		if e.complexity.Mutation.ArchiveResource == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_archiveResource_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.ArchiveResource(childComplexity, args["input"].(string)), true
 
 	case "Mutation.deleteComment":
 		if e.complexity.Mutation.DeleteComment == nil {
@@ -660,6 +654,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Forget(childComplexity, args["input"].(ForgetInput)), true
+
+	case "Mutation.getToken":
+		if e.complexity.Mutation.GetToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_getToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GetToken(childComplexity, args["fileName"].(string)), true
+
+	case "Mutation.localUpload":
+		if e.complexity.Mutation.LocalUpload == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_localUpload_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LocalUpload(childComplexity, args["input"].(LocalUploadInput)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -803,7 +821,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AllResources(childComplexity, args["page"].(int), args["size"].(int), args["desc"].(bool)), true
+		return e.complexity.Query.AllResources(childComplexity, args["page"].(int64), args["size"].(int64), args["byCreate"].(bool), args["desc"].(bool)), true
 
 	case "Query.allSubscribes":
 		if e.complexity.Query.AllSubscribes == nil {
@@ -831,6 +849,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Memory(childComplexity, args["input"].(string)), true
 
+	case "Query.status":
+		if e.complexity.Query.Status == nil {
+			break
+		}
+
+		return e.complexity.Query.Status(childComplexity), true
+
 	case "Query.subComments":
 		if e.complexity.Query.SubComments == nil {
 			break
@@ -842,13 +867,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.SubComments(childComplexity, args["id"].(string), args["page"].(int), args["size"].(int), args["desc"].(bool)), true
-
-	case "Resource.archived":
-		if e.complexity.Resource.Archived == nil {
-			break
-		}
-
-		return e.complexity.Resource.Archived(childComplexity), true
 
 	case "Resource.create_time":
 		if e.complexity.Resource.CreateTime == nil {
@@ -891,6 +909,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Resource.User(childComplexity), true
+
+	case "ServerStatus.storage_provider":
+		if e.complexity.ServerStatus.StorageProvider == nil {
+			break
+		}
+
+		return e.complexity.ServerStatus.StorageProvider(childComplexity), true
+
+	case "ServerStatus.version_code":
+		if e.complexity.ServerStatus.VersionCode == nil {
+			break
+		}
+
+		return e.complexity.ServerStatus.VersionCode(childComplexity), true
+
+	case "ServerStatus.version_name":
+		if e.complexity.ServerStatus.VersionName == nil {
+			break
+		}
+
+		return e.complexity.ServerStatus.VersionName(childComplexity), true
 
 	case "SubComment.archived":
 		if e.complexity.SubComment.Archived == nil {
@@ -990,26 +1029,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscribe.UpdateTime(childComplexity), true
 
-	case "UploadTokenPayload.path":
-		if e.complexity.UploadTokenPayload.Path == nil {
+	case "UploadTokenPayload.access_key":
+		if e.complexity.UploadTokenPayload.AccessKey == nil {
 			break
 		}
 
-		return e.complexity.UploadTokenPayload.Path(childComplexity), true
+		return e.complexity.UploadTokenPayload.AccessKey(childComplexity), true
 
-	case "UploadTokenPayload.token":
-		if e.complexity.UploadTokenPayload.Token == nil {
+	case "UploadTokenPayload.secret_access_key":
+		if e.complexity.UploadTokenPayload.SecretAccessKey == nil {
 			break
 		}
 
-		return e.complexity.UploadTokenPayload.Token(childComplexity), true
+		return e.complexity.UploadTokenPayload.SecretAccessKey(childComplexity), true
 
-	case "UploadTokenPayload.url":
-		if e.complexity.UploadTokenPayload.URL == nil {
+	case "UploadTokenPayload.session_token":
+		if e.complexity.UploadTokenPayload.SessionToken == nil {
 			break
 		}
 
-		return e.complexity.UploadTokenPayload.URL(childComplexity), true
+		return e.complexity.UploadTokenPayload.SessionToken(childComplexity), true
+
+	case "UploadTokenPayload.user_id":
+		if e.complexity.UploadTokenPayload.UserID == nil {
+			break
+		}
+
+		return e.complexity.UploadTokenPayload.UserID(childComplexity), true
 
 	case "User.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -1088,9 +1134,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputForgetInput,
 		ec.unmarshalInputHashTagInput,
 		ec.unmarshalInputListInput,
+		ec.unmarshalInputLocalUploadInput,
 		ec.unmarshalInputLoginInput,
 		ec.unmarshalInputRegisterInput,
-		ec.unmarshalInputResourceInput,
 		ec.unmarshalInputSendEmailCodeInput,
 		ec.unmarshalInputUpdateCommentInput,
 		ec.unmarshalInputUpdateMemoryInput,
@@ -1393,16 +1439,18 @@ input UpdateMemoryInput {
 	{Name: "../schema/resources.graphql", Input: `extend type Query {
     "用户的所有Resources，按创建时间排序，默认降序"
     allResources(
-        page: Int!,
-        size: Int!,
+        page: Int64!
+        size: Int64!
+        byCreate: Boolean! = false
         desc: Boolean! = true
     ):[Resource]! @auth
 }
 
 extend type Mutation {
-    addResource(input: ResourceInput!): UploadTokenPayload! @auth
-    archiveResource(input: ID!): Boolean! @auth
     deleteResource(input: ID!): Boolean! @auth
+    getToken(fileName: String!): UploadTokenPayload! @auth
+    "本地上传，直接上传至Server，仅在StorageProvider类型为local可用"
+    localUpload(input: LocalUploadInput!): String! @auth
 }
 
 type Resource {
@@ -1416,25 +1464,27 @@ type Resource {
     size: Int!
     "引用该资源的 Memories"
     memories: [Memory]!
-    "是否已归档"
-    archived: Boolean!
     "创建时间"
     create_time: DateTime!
 }
 
-input ResourceInput {
-    "文件名"
-    file_name: String!
-}
-
 
 type UploadTokenPayload {
-    "上传凭证"
-    token: String!
-    "相对路径"
-    path: String!
-    "URL"
-    url: String!
+    "用于STS凭证访问的AK"
+    access_key: String!
+    "用于STS凭证访问的SK"
+    secret_access_key: String!
+    "SessionToken，使用STS凭证访问时必须携带"
+    session_token: String!
+    "UserId"
+    user_id    : String!
+}
+
+input LocalUploadInput{
+    "SessionToken"
+    session_token: String!
+    "文件上传"
+    upload: Upload!
 }`, BuiltIn: false},
 	{Name: "../schema/schema.graphql", Input: `# GraphQL schema example
 #
@@ -1452,6 +1502,8 @@ scalar DateTime
 
 scalar Int64
 
+scalar Upload
+
 "权限控制"
 directive @auth on FIELD_DEFINITION | OBJECT
 
@@ -1464,11 +1516,25 @@ directive @goField(
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
 input ListInput {
-    page: Int!
-    size: Int!
+    page: Int64!
+    size: Int64!
     byCreate: Boolean! = false
     desc: Boolean! = true
     archived: Boolean! = false
+}`, BuiltIn: false},
+	{Name: "../schema/server.graphql", Input: `extend type Query {
+    "服务器状态信息"
+    status: ServerStatus!
+}
+
+
+type ServerStatus {
+    "服务器 Version Code"
+    version_code: Int!
+    "服务器 Version Name"
+    version_name: String!
+    "服务器存储服务 Provider"
+    storage_provider: String!
 }`, BuiltIn: false},
 	{Name: "../schema/subscribes.graphql", Input: `extend type Query {
     "所有Subscribes"
@@ -1577,21 +1643,6 @@ func (ec *executionContext) field_Mutation_addMemory_args(ctx context.Context, r
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_addResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 ResourceInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNResourceInput2time_speak_serverᚋgraphᚋgeneratedᚐResourceInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_addSubscribe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1628,21 +1679,6 @@ func (ec *executionContext) field_Mutation_archiveMemory_args(ctx context.Contex
 		}
 	}
 	args["archived"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_archiveResource_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
 	return args, nil
 }
 
@@ -1728,6 +1764,36 @@ func (ec *executionContext) field_Mutation_forget_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNForgetInput2time_speak_serverᚋgraphᚋgeneratedᚐForgetInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_getToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["fileName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileName"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["fileName"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_localUpload_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 LocalUploadInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNLocalUploadInput2time_speak_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1973,33 +2039,42 @@ func (ec *executionContext) field_Query_allMemories_args(ctx context.Context, ra
 func (ec *executionContext) field_Query_allResources_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
+	var arg0 int64
 	if tmp, ok := rawArgs["page"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg0, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["page"] = arg0
-	var arg1 int
+	var arg1 int64
 	if tmp, ok := rawArgs["size"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["size"] = arg1
 	var arg2 bool
-	if tmp, ok := rawArgs["desc"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
+	if tmp, ok := rawArgs["byCreate"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("byCreate"))
 		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["desc"] = arg2
+	args["byCreate"] = arg2
+	var arg3 bool
+	if tmp, ok := rawArgs["desc"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("desc"))
+		arg3, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["desc"] = arg3
 	return args, nil
 }
 
@@ -4675,164 +4750,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteMemory(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_addResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_addResource(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().AddResource(rctx, fc.Args["input"].(ResourceInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*UploadTokenPayload); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time_speak_server/graph/generated.UploadTokenPayload`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*UploadTokenPayload)
-	fc.Result = res
-	return ec.marshalNUploadTokenPayload2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐUploadTokenPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_addResource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "token":
-				return ec.fieldContext_UploadTokenPayload_token(ctx, field)
-			case "path":
-				return ec.fieldContext_UploadTokenPayload_path(ctx, field)
-			case "url":
-				return ec.fieldContext_UploadTokenPayload_url(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UploadTokenPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_addResource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_archiveResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_archiveResource(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().ArchiveResource(rctx, fc.Args["input"].(string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Auth == nil {
-				return nil, errors.New("directive auth is not implemented")
-			}
-			return ec.directives.Auth(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_archiveResource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_archiveResource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_deleteResource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_deleteResource(ctx, field)
 	if err != nil {
@@ -4902,6 +4819,166 @@ func (ec *executionContext) fieldContext_Mutation_deleteResource(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteResource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_getToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_getToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().GetToken(rctx, fc.Args["fileName"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*utils.UploadTokenPayload); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time_speak_server/src/service/storage/utils.UploadTokenPayload`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*utils.UploadTokenPayload)
+	fc.Result = res
+	return ec.marshalNUploadTokenPayload2ᚖtime_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_getToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "access_key":
+				return ec.fieldContext_UploadTokenPayload_access_key(ctx, field)
+			case "secret_access_key":
+				return ec.fieldContext_UploadTokenPayload_secret_access_key(ctx, field)
+			case "session_token":
+				return ec.fieldContext_UploadTokenPayload_session_token(ctx, field)
+			case "user_id":
+				return ec.fieldContext_UploadTokenPayload_user_id(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UploadTokenPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_getToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_localUpload(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_localUpload(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().LocalUpload(rctx, fc.Args["input"].(LocalUploadInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_localUpload(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_localUpload_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5702,7 +5779,7 @@ func (ec *executionContext) _Query_allResources(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().AllResources(rctx, fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
+			return ec.resolvers.Query().AllResources(rctx, fc.Args["page"].(int64), fc.Args["size"].(int64), fc.Args["byCreate"].(bool), fc.Args["desc"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -5718,10 +5795,10 @@ func (ec *executionContext) _Query_allResources(ctx context.Context, field graph
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*Resource); ok {
+		if data, ok := tmp.([]*resource.Resource); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/graph/generated.Resource`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/resource.Resource`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5733,9 +5810,9 @@ func (ec *executionContext) _Query_allResources(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Resource)
+	res := resTmp.([]*resource.Resource)
 	fc.Result = res
-	return ec.marshalNResource2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐResource(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allResources(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5756,8 +5833,6 @@ func (ec *executionContext) fieldContext_Query_allResources(ctx context.Context,
 				return ec.fieldContext_Resource_size(ctx, field)
 			case "memories":
 				return ec.fieldContext_Resource_memories(ctx, field)
-			case "archived":
-				return ec.fieldContext_Resource_archived(ctx, field)
 			case "create_time":
 				return ec.fieldContext_Resource_create_time(ctx, field)
 			}
@@ -5774,6 +5849,58 @@ func (ec *executionContext) fieldContext_Query_allResources(ctx context.Context,
 	if fc.Args, err = ec.field_Query_allResources_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_status(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Status(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ServerStatus)
+	fc.Result = res
+	return ec.marshalNServerStatus2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "version_code":
+				return ec.fieldContext_ServerStatus_version_code(ctx, field)
+			case "version_name":
+				return ec.fieldContext_ServerStatus_version_name(ctx, field)
+			case "storage_provider":
+				return ec.fieldContext_ServerStatus_storage_provider(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ServerStatus", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -6069,7 +6196,7 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6083,7 +6210,7 @@ func (ec *executionContext) _Resource_id(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Resource().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6104,8 +6231,8 @@ func (ec *executionContext) fieldContext_Resource_id(ctx context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "Resource",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -6113,7 +6240,7 @@ func (ec *executionContext) fieldContext_Resource_id(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_path(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_path(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_path(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6157,7 +6284,7 @@ func (ec *executionContext) fieldContext_Resource_path(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_user(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_user(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_user(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6171,7 +6298,7 @@ func (ec *executionContext) _Resource_user(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.Resource().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6192,8 +6319,8 @@ func (ec *executionContext) fieldContext_Resource_user(ctx context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "Resource",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6221,7 +6348,7 @@ func (ec *executionContext) fieldContext_Resource_user(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_size(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_size(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_size(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6247,9 +6374,9 @@ func (ec *executionContext) _Resource_size(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Resource_size(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6265,7 +6392,7 @@ func (ec *executionContext) fieldContext_Resource_size(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_memories(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_memories(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_memories(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6279,7 +6406,7 @@ func (ec *executionContext) _Resource_memories(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Memories, nil
+		return ec.resolvers.Resource().Memories(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6300,8 +6427,8 @@ func (ec *executionContext) fieldContext_Resource_memories(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Resource",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -6327,51 +6454,7 @@ func (ec *executionContext) fieldContext_Resource_memories(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Resource_archived(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Resource_archived(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Archived, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Resource_archived(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Resource",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Resource_create_time(ctx context.Context, field graphql.CollectedField, obj *Resource) (ret graphql.Marshaler) {
+func (ec *executionContext) _Resource_create_time(ctx context.Context, field graphql.CollectedField, obj *resource.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_create_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -6410,6 +6493,138 @@ func (ec *executionContext) fieldContext_Resource_create_time(ctx context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServerStatus_version_code(ctx context.Context, field graphql.CollectedField, obj *ServerStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServerStatus_version_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.VersionCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServerStatus_version_code(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServerStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServerStatus_version_name(ctx context.Context, field graphql.CollectedField, obj *ServerStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServerStatus_version_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.VersionName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServerStatus_version_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServerStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ServerStatus_storage_provider(ctx context.Context, field graphql.CollectedField, obj *ServerStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ServerStatus_storage_provider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StorageProvider, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ServerStatus_storage_provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ServerStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7085,8 +7300,8 @@ func (ec *executionContext) fieldContext_Subscribe_update_time(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _UploadTokenPayload_token(ctx context.Context, field graphql.CollectedField, obj *UploadTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UploadTokenPayload_token(ctx, field)
+func (ec *executionContext) _UploadTokenPayload_access_key(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_access_key(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -7099,7 +7314,7 @@ func (ec *executionContext) _UploadTokenPayload_token(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Token, nil
+		return obj.AccessKey, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7116,7 +7331,7 @@ func (ec *executionContext) _UploadTokenPayload_token(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UploadTokenPayload_token(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UploadTokenPayload_access_key(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UploadTokenPayload",
 		Field:      field,
@@ -7129,8 +7344,8 @@ func (ec *executionContext) fieldContext_UploadTokenPayload_token(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _UploadTokenPayload_path(ctx context.Context, field graphql.CollectedField, obj *UploadTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UploadTokenPayload_path(ctx, field)
+func (ec *executionContext) _UploadTokenPayload_secret_access_key(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_secret_access_key(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -7143,7 +7358,7 @@ func (ec *executionContext) _UploadTokenPayload_path(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Path, nil
+		return obj.SecretAccessKey, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7160,7 +7375,7 @@ func (ec *executionContext) _UploadTokenPayload_path(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UploadTokenPayload_path(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UploadTokenPayload_secret_access_key(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UploadTokenPayload",
 		Field:      field,
@@ -7173,8 +7388,8 @@ func (ec *executionContext) fieldContext_UploadTokenPayload_path(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _UploadTokenPayload_url(ctx context.Context, field graphql.CollectedField, obj *UploadTokenPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UploadTokenPayload_url(ctx, field)
+func (ec *executionContext) _UploadTokenPayload_session_token(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_session_token(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -7187,7 +7402,7 @@ func (ec *executionContext) _UploadTokenPayload_url(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.URL, nil
+		return obj.SessionToken, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7204,7 +7419,51 @@ func (ec *executionContext) _UploadTokenPayload_url(ctx context.Context, field g
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UploadTokenPayload_url(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UploadTokenPayload_session_token(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadTokenPayload_user_id(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_user_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadTokenPayload_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UploadTokenPayload",
 		Field:      field,
@@ -9640,7 +9899,7 @@ func (ec *executionContext) unmarshalInputListInput(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-			it.Page, err = ec.unmarshalNInt2int(ctx, v)
+			it.Page, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9648,7 +9907,7 @@ func (ec *executionContext) unmarshalInputListInput(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-			it.Size, err = ec.unmarshalNInt2int(ctx, v)
+			it.Size, err = ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9673,6 +9932,42 @@ func (ec *executionContext) unmarshalInputListInput(ctx context.Context, obj int
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("archived"))
 			it.Archived, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLocalUploadInput(ctx context.Context, obj interface{}) (LocalUploadInput, error) {
+	var it LocalUploadInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"session_token", "upload"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "session_token":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("session_token"))
+			it.SessionToken, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upload"))
+			it.Upload, err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9761,34 +10056,6 @@ func (ec *executionContext) unmarshalInputRegisterInput(ctx context.Context, obj
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_verify_code"))
 			it.EmailVerifyCode, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputResourceInput(ctx context.Context, obj interface{}) (ResourceInput, error) {
-	var it ResourceInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"file_name"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "file_name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file_name"))
-			it.FileName, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10643,28 +10910,28 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "addResource":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_addResource(ctx, field)
-			})
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "archiveResource":
-
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_archiveResource(ctx, field)
-			})
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "deleteResource":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteResource(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "getToken":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_getToken(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "localUpload":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_localUpload(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -10888,6 +11155,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "status":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_status(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "allSubscribes":
 			field := field
 
@@ -10959,7 +11249,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var resourceImplementors = []string{"Resource"}
 
-func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet, obj *Resource) graphql.Marshaler {
+func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet, obj *resource.Resource) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, resourceImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -10968,50 +11258,124 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Resource")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Resource_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "path":
 
 			out.Values[i] = ec._Resource_path(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user":
+			field := field
 
-			out.Values[i] = ec._Resource_user(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "size":
 
 			out.Values[i] = ec._Resource_size(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "memories":
+			field := field
 
-			out.Values[i] = ec._Resource_memories(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_memories(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
-		case "archived":
 
-			out.Values[i] = ec._Resource_archived(ctx, field, obj)
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
 
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			})
 		case "create_time":
 
 			out.Values[i] = ec._Resource_create_time(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var serverStatusImplementors = []string{"ServerStatus"}
+
+func (ec *executionContext) _ServerStatus(ctx context.Context, sel ast.SelectionSet, obj *ServerStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, serverStatusImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ServerStatus")
+		case "version_code":
+
+			out.Values[i] = ec._ServerStatus_version_code(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "version_name":
+
+			out.Values[i] = ec._ServerStatus_version_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "storage_provider":
+
+			out.Values[i] = ec._ServerStatus_storage_provider(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -11247,7 +11611,7 @@ func (ec *executionContext) _Subscribe(ctx context.Context, sel ast.SelectionSet
 
 var uploadTokenPayloadImplementors = []string{"UploadTokenPayload"}
 
-func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *UploadTokenPayload) graphql.Marshaler {
+func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *utils.UploadTokenPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, uploadTokenPayloadImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -11255,23 +11619,30 @@ func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("UploadTokenPayload")
-		case "token":
+		case "access_key":
 
-			out.Values[i] = ec._UploadTokenPayload_token(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "path":
-
-			out.Values[i] = ec._UploadTokenPayload_path(ctx, field, obj)
+			out.Values[i] = ec._UploadTokenPayload_access_key(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "url":
+		case "secret_access_key":
 
-			out.Values[i] = ec._UploadTokenPayload_url(ctx, field, obj)
+			out.Values[i] = ec._UploadTokenPayload_secret_access_key(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "session_token":
+
+			out.Values[i] = ec._UploadTokenPayload_session_token(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user_id":
+
+			out.Values[i] = ec._UploadTokenPayload_user_id(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -11928,6 +12299,21 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v interface{}) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11945,6 +12331,11 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 
 func (ec *executionContext) unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx context.Context, v interface{}) (ListInput, error) {
 	res, err := ec.unmarshalInputListInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNLocalUploadInput2time_speak_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx context.Context, v interface{}) (LocalUploadInput, error) {
+	res, err := ec.unmarshalInputLocalUploadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -12024,7 +12415,7 @@ func (ec *executionContext) unmarshalNRegisterInput2time_speak_serverᚋgraphᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋgraphᚋgeneratedᚐResource(ctx context.Context, sel ast.SelectionSet, v []*Resource) graphql.Marshaler {
+func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v []*resource.Resource) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12048,7 +12439,7 @@ func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋgraphᚋg
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOResource2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐResource(ctx, sel, v[i])
+			ret[i] = ec.marshalOResource2ᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12062,14 +12453,23 @@ func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋgraphᚋg
 	return ret
 }
 
-func (ec *executionContext) unmarshalNResourceInput2time_speak_serverᚋgraphᚋgeneratedᚐResourceInput(ctx context.Context, v interface{}) (ResourceInput, error) {
-	res, err := ec.unmarshalInputResourceInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNSendEmailCodeInput2time_speak_serverᚋgraphᚋgeneratedᚐSendEmailCodeInput(ctx context.Context, v interface{}) (SendEmailCodeInput, error) {
 	res, err := ec.unmarshalInputSendEmailCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNServerStatus2time_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v ServerStatus) graphql.Marshaler {
+	return ec._ServerStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNServerStatus2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v *ServerStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ServerStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -12192,11 +12592,26 @@ func (ec *executionContext) unmarshalNUpdateSubscribeInput2time_speak_serverᚋg
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNUploadTokenPayload2time_speak_serverᚋgraphᚋgeneratedᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v UploadTokenPayload) graphql.Marshaler {
+func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (graphql.Upload, error) {
+	res, err := graphql.UnmarshalUpload(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
+	res := graphql.MarshalUpload(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNUploadTokenPayload2time_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v utils.UploadTokenPayload) graphql.Marshaler {
 	return ec._UploadTokenPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUploadTokenPayload2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v *UploadTokenPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUploadTokenPayload2ᚖtime_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v *utils.UploadTokenPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12543,7 +12958,7 @@ func (ec *executionContext) marshalOMemory2ᚖtime_speak_serverᚋsrcᚋservice�
 	return ec._Memory(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOResource2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐResource(ctx context.Context, sel ast.SelectionSet, v *Resource) graphql.Marshaler {
+func (ec *executionContext) marshalOResource2ᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v *resource.Resource) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

@@ -1,0 +1,14 @@
+extend type Query {
+    "服务器状态信息"
+    status: ServerStatus!
+}
+
+
+type ServerStatus {
+    "服务器 Version Code"
+    version_code: Int!
+    "服务器 Version Name"
+    version_name: String!
+    "服务器存储服务 Provider"
+    storage_provider: String!
+}

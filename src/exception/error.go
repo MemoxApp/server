@@ -15,10 +15,13 @@ var (
 	ErrUserNotFound            = GqlError("用户不存在", "USER_NOT_FOUND")
 	ErrReplyNotFound           = GqlError("回复不存在", "REPLY_NOT_FOUND")
 
-	ErrTooManyRequest = GqlError("请求过于频繁", "TOO_MANY_REQUEST")
-	ErrParamInvalid   = GqlError("参数不合法", "PARAM_INVALID")
-	ErrContentEmpty   = GqlError("你还什么都没有写呢", "CONTENT_EMPTY")
-	ErrInvalidID      = GqlError("错误的ID", "INVALID_ID")
+	ErrTooManyRequest         = GqlError("请求过于频繁", "TOO_MANY_REQUEST")
+	ErrParamInvalid           = GqlError("参数不合法", "PARAM_INVALID")
+	ErrContentEmpty           = GqlError("你还什么都没有写呢", "CONTENT_EMPTY")
+	ErrInvalidID              = GqlError("错误的ID", "INVALID_ID")
+	ErrInvalidFileName        = GqlError("不合法的文件名", "INVALID_FILE_NAME")
+	ErrDeleteResource         = GqlError("删除资源文件错误", "DELETE_RESOURCE_ERROR")
+	ErrInvalidStorageProvider = GqlError("不合法的存储提供者", "INVALID_STORAGE_PROVIDER")
 
 	ErrTitleTooLong   = GqlError("标题太长啦", "TITLE_TOO_LONG")
 	ErrContentTooLong = GqlError("内容太长啦", "CONTENT_TOO_LONG")

@@ -7,10 +7,18 @@ import (
 
 type Option func(bson.M) bson.M
 
-// With 设置键值对
-func With(key, t string) Option {
+// WithString 设置键值对
+func WithString(key, t string) Option {
 	return func(m bson.M) bson.M {
 		m[key] = t
+		return m
+	}
+}
+
+// With 设置键值对
+func With(key string, obj interface{}) Option {
+	return func(m bson.M) bson.M {
+		m[key] = obj
 		return m
 	}
 }
