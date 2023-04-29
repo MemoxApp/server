@@ -213,6 +213,17 @@ func (s *Svc) MakeHashTags(ctx context.Context, content string) ([]primitive.Obj
 }
 
 func ParseHashTags(content string) []string {
-	r, _ := regexp.Compile("#\\S[^\\n]+? ")
-	return r.FindAllString(content, -1)
+	r, _ := regexp.Compile("#\\((\\S[^\\n]*?)\\)\\s|#(\\S[^\\n]*?)\\s")
+	all := r.FindAllStringSubmatch(content+" ", -1) // 最后加一个空格，防止最后一个标签没有空格
+	var tags []string
+	for _, v := range all {
+		tag := v[1]
+		if len(tag) == 0 {
+			tag = v[2]
+		}
+		tags = append(tags, tag)
+	}
+	return tags
 }
+
+/// #话题    #话题2    #(话题)

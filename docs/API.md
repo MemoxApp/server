@@ -1,5 +1,35 @@
 # API 文档
 
+## 待测试接口
+
+```
+Query
+
+allHistories(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [History]!
+allComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [Comment]!
+subComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [SubComment]!
+
+
+Mutation
+
+addComment(input: AddCommentInput!): ID!
+updateComment(input: UpdateCommentInput!): Boolean!
+deleteComment(input: ID!): Boolean!
+updateHashTag(input: HashTagInput!): Boolean!
+deleteHashTag(input: ID!): Boolean!
+updateMemory(input: UpdateMemoryInput!): Boolean!
+archiveMemory(input: ID!,archived: Boolean!): Boolean!
+deleteMemory(input: ID!): Boolean!
+deleteResource(input: ID!): Boolean!
+addSubscribe(input: AddSubscribeInput!): ID!
+updateSubscribe(input: UpdateSubscribeInput!): Boolean!
+deleteSubscribe(input: ID!): Boolean!
+
+其他
+百度云BOS上传测试
+资源链接生成测试
+
+
 以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
 
 ## Account
@@ -119,6 +149,112 @@ Input
 }
 ```
 
+### 获取 Memory 详情
+
+Query
+
+```graphql
+query ($input: ID!){
+    memory(input: $input){
+        id
+        user{
+            id
+            username
+            avatar
+        }
+        title
+        content
+        hashtags{
+            id
+            name
+        }
+        archived
+        create_time
+        update_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "input": "644d2af60cef546afdd38365"
+}
+```
+
+### 获取 Memories
+
+Query
+
+```graphql
+query ($input:ListInput!){
+    allMemories(input:$input){
+        id
+        user{
+            id
+            username
+            avatar
+        }
+        title
+        content
+        hashtags{
+            id
+            name
+        }
+        archived
+        create_time
+        update_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "input": {
+    "page": 0,
+    "size": 10,
+    "byCreate": false,
+    "desc": true,
+    "archived": false
+  }
+}
+```
+
+## 标签
+
+### 标签列表
+
+Query
+
+```graphql
+query($input:ListInput!){
+    allHashTags(input:$input){
+        id
+        name
+        archived
+        create_time
+        update_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "input": {
+    "page": 0,
+    "size": 10,
+    "byCreate": false,
+    "desc": true,
+    "archived": false
+  }
+}
+```
+
 ## 用户
 
 ### 当前用户
@@ -174,6 +310,41 @@ Input
 ```
 
 ## 资源相关
+
+### 获取资源列表
+
+Query
+
+```graphql
+query ($page: Int64!, $size: Int64!, $byCreate: Boolean!, $desc: Boolean!) {
+    allResources(page: $page, size: $size, byCreate: $byCreate, desc: $desc) {
+        id
+        user {
+            id
+            username
+            avatar
+        }
+        path
+        size
+        memories{
+            id
+            title
+        }
+        create_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "page": 0,
+  "size": 10,
+  "byCreate": false,
+  "desc": true
+}
+```
 
 ### 获取文件上传 Token
 
@@ -257,6 +428,25 @@ curl localhost:4000/graphql \
   -F 0=@a.png
 ```
 
+## 订阅相关
+
+### 查看所有可用订阅
+
+Query
+
+```graphql
+{
+    allSubscribes {
+        id
+        name
+        capacity
+        available
+        create_time
+        update_time
+    }
+}
+```
+
 ## 其他
 
 ### 服务器版本信息
@@ -285,16 +475,4 @@ Output
     }
   }
 }
-```
-
-Query
-
-```graphql
-
-```
-
-Input
-
-```json
-
 ```
