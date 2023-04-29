@@ -32,6 +32,8 @@ type Resource {
 
 
 type UploadTokenPayload {
+    "唯一资源标识"
+    id: ID!
     "用于STS凭证访问的AK"
     access_key: String!
     "用于STS凭证访问的SK"

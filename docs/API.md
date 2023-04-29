@@ -1,21 +1,22 @@
 # API 文档
 
+## 已知问题
+
+Memory 删除时 Comments及其子回复未删除（有必要删除）  
+Memory 删除时 历史记录未删除（有必要删除）  
+Memory 更新后 存在历史记录对资源的引用
+
 ## 待测试接口
 
 ```
 Query
 
-allHistories(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [History]!
 allComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [Comment]!
 subComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [SubComment]!
 
 
 Mutation
 
-updateMemory(input: UpdateMemoryInput!): Boolean!
-archiveMemory(input: ID!,archived: Boolean!): Boolean!
-deleteMemory(input: ID!): Boolean!
-deleteResource(input: ID!): Boolean!
 addSubscribe(input: AddSubscribeInput!): ID!
 updateSubscribe(input: UpdateSubscribeInput!): Boolean!
 deleteSubscribe(input: ID!): Boolean!
@@ -23,6 +24,7 @@ deleteSubscribe(input: ID!): Boolean!
 其他
 百度云BOS上传测试
 资源链接生成测试
+其他用户内容可见性测试
 ```
 
 以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
@@ -259,6 +261,107 @@ Input
 }
 ```
 
+### 更新 Memory
+
+Query
+
+```graphql
+mutation ($input:UpdateMemoryInput!){
+    updateMemory(input:$input)
+}
+```
+
+Input
+`title`与`content`非必须
+
+```json
+{
+  "input": {
+    "id": "6448e3654c750ecc11b96999",
+    "title": "<新标题>",
+    "content": "<新内容> 附加资源采用${资源ID}引用，获取Memory时会自动替换为资源链接![Hello](${644d3f61dd12d1c7d2d65b5c})"
+  }
+}
+```
+
+### 归档 Memory
+
+Query
+
+```graphql
+mutation ($input:ID!,$archived:Boolean! = true){
+    archiveMemory(input:$input,archived:$archived)
+}
+```
+
+Input
+
+```json
+{
+  "input": "6448e3654c750ecc11b96999",
+  "archived": true
+}
+```
+
+### 删除 Memory
+
+Query
+
+```graphql
+mutation ($input:ID!){
+    deleteMemory(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": "6448e3654c750ecc11b96999"
+}
+```
+
+## 历史记录
+
+历史记录仅保留最基础的文本信息，资源删除后无法通过历史记录恢复  
+Query
+
+```graphql
+query ($id: ID!, $page: Int64!, $size: Int64!, $desc: Boolean!) {
+    allHistories(
+        id: $id
+        page: $page
+        size: $size
+        desc: $desc
+    ) {
+        id
+        user {
+            id
+            username
+            avatar
+        }
+        title
+        content
+        hashtags {
+            id
+            name
+        }
+        create_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "id": "644d2af60cef546afdd38365",
+  "page": 0,
+  "size": 10,
+  "desc": true
+}
+```
+
 ## 标签
 
 ### 标签列表
@@ -487,6 +590,25 @@ Input
   "size": 10,
   "byCreate": false,
   "desc": true
+}
+```
+
+### 删除资源
+
+只有没有Memory引用改资源时才可删除  
+Query
+
+```graphql
+mutation ($input:ID!){
+    deleteResource(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": "644d43d6b3f18106402b5c6c"
 }
 ```
 

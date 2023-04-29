@@ -66,9 +66,6 @@ func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMem
 
 // UpdateMemory is the resolver for the updateMemory field.
 func (r *mutationResolver) UpdateMemory(ctx context.Context, input generated.UpdateMemoryInput) (bool, error) {
-	if len(input.Content) == 0 {
-		return false, exception.ErrContentEmpty
-	}
 	tags, err := r.hashtagSvc.MakeHashTags(ctx, input.Content)
 	if err != nil {
 		return false, err
@@ -116,6 +113,13 @@ func (r *mutationResolver) ArchiveMemory(ctx context.Context, input string, arch
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	getMemory, err := r.memorySvc.GetMemory(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if getMemory.Archived == archived {
+		return false, exception.ErrMemoryAlreadyArchived
+	}
 	toUpdate := opts.WithArchived(archived)
 	err = r.memorySvc.UpdateMemory(ctx, id, toUpdate)
 	return true, nil
@@ -130,6 +134,9 @@ func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool
 	oldMemory, err := r.memorySvc.GetMemory(ctx, id)
 	if err != nil {
 		return false, err
+	}
+	if !oldMemory.Archived {
+		return false, exception.ErrMemoryNotArchived
 	}
 	err = r.memorySvc.DeleteMemory(ctx, id)
 	err = r.resourceSvc.UpdateReferences(ctx, oldMemory.Content, "", input)

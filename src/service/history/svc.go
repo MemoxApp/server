@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
+	"time_speak_server/src/exception"
 	"time_speak_server/src/service/memory"
 	"time_speak_server/src/service/user"
 )
@@ -56,7 +57,11 @@ func (s *Svc) GetHistories(ctx context.Context, memoryID string, page, size int6
 		Limit: &size,
 		Sort:  bson.M{"create_time": order},
 	}
-	cursor, err := s.m.Find(ctx, bson.M{"memory_id": memoryID}, opts)
+	id, err := primitive.ObjectIDFromHex(memoryID)
+	if err != nil {
+		return nil, exception.ErrInvalidID
+	}
+	cursor, err := s.m.Find(ctx, bson.M{"memory_id": id}, opts)
 	if err != nil {
 		return nil, err
 	}

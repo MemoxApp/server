@@ -97,21 +97,18 @@ func (s *Svc) UpdateResource(ctx context.Context, id primitive.ObjectID, opts ..
 	return err
 }
 
-// InsertOrUpdateResource 插入或更新资源
-func (s *Svc) InsertOrUpdateResource(ctx context.Context, fileName, memoryID string) error {
+// UpdateResourceReferences 更新资源引用
+func (s *Svc) UpdateResourceReferences(ctx context.Context, ref, memoryID string) error {
 	var resID primitive.ObjectID
 	var refArray []primitive.ObjectID
-	res, err := s.GetResourceByPath(ctx, fileName)
+	id, err := primitive.ObjectIDFromHex(ref)
+	if err != nil {
+		return exception.ErrInvalidID
+	}
+	res, err := s.GetResource(ctx, id)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			resource, err := s.NewResource(ctx, fileName, 0)
-			if err != nil {
-				return err
-			}
-			resID, err = primitive.ObjectIDFromHex(resource)
-			if err != nil {
-				return exception.ErrInvalidID
-			}
+			return exception.ErrResourceNotFound
 		}
 		return err
 	} else {
@@ -132,32 +129,34 @@ func (s *Svc) InsertOrUpdateResource(ctx context.Context, fileName, memoryID str
 }
 
 // UpdateResourceSize 插入或更新资源
-func (s *Svc) UpdateResourceSize(ctx context.Context, fileName string, size int64) error {
+func (s *Svc) UpdateResourceSize(ctx context.Context, fileName string, size int64) (string, error) {
 	res, err := s.GetResourceByPath(ctx, fileName)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = s.UpdateResource(ctx, res.ObjectID, opts.With("size", size))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return res.ObjectID.Hex(), nil
 }
 
 func (s *Svc) UpdateReferences(ctx context.Context, oldContent, newContent string, memoryID string) error {
 	oldReferences := utils.PickupReferences(oldContent)
 	newReferences := utils.PickupReferences(newContent)
+	fmt.Printf("old: %v, new: %v\n", oldReferences, newReferences)
 	removeReferences, insertReferences := DiffArray(oldReferences, newReferences)
+	fmt.Printf("remove: %v, insert: %v\n", removeReferences, insertReferences)
 	if len(insertReferences) > 0 {
 		for _, ref := range insertReferences {
-			err := s.InsertOrUpdateResource(ctx, ref, memoryID)
+			err := s.UpdateResourceReferences(ctx, ref, memoryID)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	if len(removeReferences) > 0 {
-		for _, ref := range insertReferences {
+		for _, ref := range removeReferences {
 			err := s.RemoveResourceReference(ctx, ref, memoryID)
 			if err != nil {
 				return err
@@ -168,9 +167,13 @@ func (s *Svc) UpdateReferences(ctx context.Context, oldContent, newContent strin
 }
 
 // RemoveResourceReference 移除资源引用
-func (s *Svc) RemoveResourceReference(ctx context.Context, fileName, memoryID string) error {
+func (s *Svc) RemoveResourceReference(ctx context.Context, ref, memoryID string) error {
 	var refArray []primitive.ObjectID
-	res, err := s.GetResourceByPath(ctx, fileName)
+	id, err := primitive.ObjectIDFromHex(ref)
+	if err != nil {
+		return exception.ErrInvalidID
+	}
+	res, err := s.GetResource(ctx, id)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil
@@ -196,7 +199,7 @@ func (s *Svc) DeleteResource(ctx context.Context, id primitive.ObjectID) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.m.DeleteOne(ctx, bson.M{"uid": uid, "_id": id, "ref": nil}) // 只有没有引用的资源才能删除 // 只能删除自己的资源
+	_, err = s.m.DeleteOne(ctx, bson.M{"uid": uid, "_id": id}) // 只能删除自己的资源
 	if err != nil {
 		return err
 	}
@@ -221,6 +224,9 @@ func (s *Svc) GetResource(ctx context.Context, id primitive.ObjectID) (*Resource
 	var resource Resource
 	err = s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&resource) // 只能获取自己的资源
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, exception.ErrResourceNotFound
+		}
 		return nil, err
 	}
 	return &resource, nil
@@ -294,11 +300,19 @@ func (s *Svc) GetResources(ctx context.Context, uid primitive.ObjectID, page, si
 func (s *Svc) InsertResourceUrl(ctx context.Context, content string) (string, error) {
 	refs := utils.PickupReferences(content)
 	for _, ref := range refs {
-		url, err := s.sto.GetUrl(ctx, ref)
+		id, err := primitive.ObjectIDFromHex(ref)
+		if err != nil {
+			return "", exception.ErrInvalidID
+		}
+		res, err := s.GetResource(ctx, id)
 		if err != nil {
 			return "", err
 		}
-		content = strings.ReplaceAll(content, ref, url)
+		url, err := s.sto.GetUrl(ctx, res.Path)
+		if err != nil {
+			return "", err
+		}
+		content = strings.ReplaceAll(content, "${"+ref+"}", url)
 	}
 	return content, nil
 }
@@ -312,6 +326,6 @@ func (s *Svc) LocalUpload(ctx context.Context, session string, upload graphql.Up
 	if err != nil {
 		return "", err
 	}
-	err = s.UpdateResourceSize(ctx, l, size)
-	return l, err
+	id, err := s.UpdateResourceSize(ctx, l, size)
+	return id, err
 }

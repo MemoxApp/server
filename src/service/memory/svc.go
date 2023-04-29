@@ -112,6 +112,9 @@ func (s *Svc) GetMemory(ctx context.Context, id primitive.ObjectID) (*Memory, er
 		var memory Memory
 		err := s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&memory) // 只能获取自己的记忆
 		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, exception.ErrMemoryNotFound
+			}
 			return nil, err
 		}
 		return bson.Marshal(memory)

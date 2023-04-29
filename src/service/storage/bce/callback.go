@@ -26,7 +26,7 @@ func Callback(svc *resource.Svc) func(c *gin.Context) {
 			if callback.Events.Content.Filesize > 0 && callback.Events.Content.Object != "" {
 				size := callback.Events.Content.Filesize
 				path := callback.Events.Content.Object
-				err = svc.UpdateResourceSize(c.Request.Context(), path, int64(size))
+				_, err = svc.UpdateResourceSize(c.Request.Context(), path, int64(size))
 				if err != nil {
 					log.Error("百度云回调更新资源大小失败", err)
 					return

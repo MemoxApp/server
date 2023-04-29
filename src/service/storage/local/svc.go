@@ -49,12 +49,7 @@ func (b *Local) GetToken(ctx context.Context, fileName string) (*utils.UploadTok
 }
 
 func (b *Local) GetUrl(ctx context.Context, path string) (string, error) {
-	userId, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return "", err
-	}
-	p := utils.GeneratePath(userId.Hex(), path)
-	p = b.Config.Schema + "://" + b.Config.Host + "/" + p
+	p := b.Config.Schema + "://" + b.Config.Host + "/resources/" + path
 	return p, nil
 }
 
@@ -63,13 +58,10 @@ func (b *Local) Delete(ctx context.Context, path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	p := utils.GeneratePath(userId.Hex(), path)
+	p := utils.GenerateResourcePath(userId.Hex(), path)
 	// 删除文件
 	absPath := filepath.Clean(b.Config.Folder + "/" + p)
-	err = os.Remove(absPath)
-	if err != nil {
-		return false, err
-	}
+	_ = os.Remove(absPath)
 	return true, nil
 }
 
@@ -82,8 +74,12 @@ func (b *Local) Upload(ctx context.Context, session string, upload graphql.Uploa
 	if err != nil {
 		return "", 0, exception.ErrInvalidSession
 	}
-	path := utils.GeneratePath(userId.Hex(), s)
-	absPath := filepath.Clean(b.Config.Folder + "/" + s)
+	path := utils.GenerateResourcePath(userId.Hex(), s)
+	absPath := filepath.Clean(b.Config.Folder + "/" + path)
+	err = os.MkdirAll(filepath.Dir(absPath), 0666)
+	if err != nil {
+		return "", 0, err
+	}
 	f, err := os.OpenFile(absPath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return "", 0, err

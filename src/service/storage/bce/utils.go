@@ -1,5 +1,7 @@
 package bce
 
+import "time_speak_server/src/service/storage/utils"
+
 func (b *BCE) getWritePermissionACL(userID, filename string) string {
 	return ` {
   "accessControlList": [
@@ -7,7 +9,7 @@ func (b *BCE) getWritePermissionACL(userID, filename string) string {
     "service":"bce:bos",
     "region":"` + b.Config.Region + `",
     "effect": "Allow",
-    "resource": ["users/` + userID + "/" + filename + `"],
+    "resource": ["` + utils.GenerateResourcePath(userID, filename) + `"],
     "permission": ["WRITE"]
     }
    ]

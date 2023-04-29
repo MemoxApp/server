@@ -23,6 +23,13 @@ func (r *mutationResolver) DeleteResource(ctx context.Context, input string) (bo
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	res, err := r.resourceSvc.GetResource(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if len(res.Ref) > 0 {
+		return false, exception.ErrResourceHasReference
+	}
 	err = r.resourceSvc.DeleteResource(ctx, id)
 	if err != nil {
 		return false, err
@@ -41,13 +48,14 @@ func (r *mutationResolver) GetToken(ctx context.Context, fileName string) (*util
 		return nil, err
 	}
 	absPath := utils.GeneratePath(userID.Hex(), fileName)
-	_, err = r.resourceSvc.NewResource(ctx, absPath, 0)
+	res, err := r.resourceSvc.NewResource(ctx, absPath, 0)
 	if err != nil {
 		return nil, err
 	}
 	if err != nil {
 		return nil, err
 	}
+	token.ID = res
 	return token, nil
 }
 

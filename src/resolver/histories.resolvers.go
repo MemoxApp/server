@@ -50,7 +50,7 @@ func (r *historyResolver) Hashtags(ctx context.Context, obj *history.History) ([
 }
 
 // AllHistories is the resolver for the allHistories field.
-func (r *queryResolver) AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error) {
+func (r *queryResolver) AllHistories(ctx context.Context, id string, page int64, size int64, desc bool) ([]*history.History, error) {
 	histories, err := r.historySvc.GetHistories(ctx, id, int64(page), int64(size), desc)
 	if err != nil {
 		return nil, err

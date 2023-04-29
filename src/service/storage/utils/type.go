@@ -14,6 +14,8 @@ type Service interface {
 }
 
 type UploadTokenPayload struct {
+	// 唯一资源标识符
+	ID string `json:"id"`
 	// 用于STS凭证访问的AK
 	AccessKey string `json:"access_key"`
 	// 用于STS凭证访问的SK

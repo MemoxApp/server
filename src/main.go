@@ -38,6 +38,7 @@ func main() {
 	r := gin.Default()
 	r.Any("/query", graph.GraphqlHandler(conf, database, redis))
 	r.GET("/", graph.PlaygroundHandler())
+	r.Static("/resources", conf.Storage.Local.Folder+"/resources")
 	r.POST("/notify/bce", bce.Callback(resourceSvc))
 	err = r.Run()
 	if err != nil {

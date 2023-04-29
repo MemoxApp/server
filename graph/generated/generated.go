@@ -135,7 +135,7 @@ type ComplexityRoot struct {
 	Query struct {
 		AllComments      func(childComplexity int, id string, page int, size int, desc bool) int
 		AllHashTags      func(childComplexity int, input ListInput) int
-		AllHistories     func(childComplexity int, id string, page int, size int, desc bool) int
+		AllHistories     func(childComplexity int, id string, page int64, size int64, desc bool) int
 		AllMemories      func(childComplexity int, input ListInput) int
 		AllMemoriesByTag func(childComplexity int, tag string, input ListInput) int
 		AllResources     func(childComplexity int, page int64, size int64, byCreate bool, desc bool) int
@@ -183,6 +183,7 @@ type ComplexityRoot struct {
 
 	UploadTokenPayload struct {
 		AccessKey       func(childComplexity int) int
+		ID              func(childComplexity int) int
 		SecretAccessKey func(childComplexity int) int
 		SessionToken    func(childComplexity int) int
 		UserID          func(childComplexity int) int
@@ -251,7 +252,7 @@ type QueryResolver interface {
 	AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
 	SubComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
 	AllHashTags(ctx context.Context, input ListInput) ([]*hashtag.HashTag, error)
-	AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error)
+	AllHistories(ctx context.Context, id string, page int64, size int64, desc bool) ([]*history.History, error)
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
 	AllMemoriesByTag(ctx context.Context, tag string, input ListInput) ([]*memory.Memory, error)
 	Memory(ctx context.Context, input string) (*memory.Memory, error)
@@ -799,7 +800,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AllHistories(childComplexity, args["id"].(string), args["page"].(int), args["size"].(int), args["desc"].(bool)), true
+		return e.complexity.Query.AllHistories(childComplexity, args["id"].(string), args["page"].(int64), args["size"].(int64), args["desc"].(bool)), true
 
 	case "Query.allMemories":
 		if e.complexity.Query.AllMemories == nil {
@@ -1049,6 +1050,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UploadTokenPayload.AccessKey(childComplexity), true
+
+	case "UploadTokenPayload.id":
+		if e.complexity.UploadTokenPayload.ID == nil {
+			break
+		}
+
+		return e.complexity.UploadTokenPayload.ID(childComplexity), true
 
 	case "UploadTokenPayload.secret_access_key":
 		if e.complexity.UploadTokenPayload.SecretAccessKey == nil {
@@ -1379,8 +1387,8 @@ input HashTagInput {
     """
     allHistories(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true,
     ):[History]! @auth
 }
@@ -1486,6 +1494,8 @@ type Resource {
 
 
 type UploadTokenPayload {
+    "唯一资源标识"
+    id: ID!
     "用于STS凭证访问的AK"
     access_key: String!
     "用于STS凭证访问的SK"
@@ -2007,19 +2017,19 @@ func (ec *executionContext) field_Query_allHistories_args(ctx context.Context, r
 		}
 	}
 	args["id"] = arg0
-	var arg1 int
+	var arg1 int64
 	if tmp, ok := rawArgs["page"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["page"] = arg1
-	var arg2 int
+	var arg2 int64
 	if tmp, ok := rawArgs["size"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg2, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -4924,6 +4934,8 @@ func (ec *executionContext) fieldContext_Mutation_getToken(ctx context.Context, 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_UploadTokenPayload_id(ctx, field)
 			case "access_key":
 				return ec.fieldContext_UploadTokenPayload_access_key(ctx, field)
 			case "secret_access_key":
@@ -5542,7 +5554,7 @@ func (ec *executionContext) _Query_allHistories(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().AllHistories(rctx, fc.Args["id"].(string), fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
+			return ec.resolvers.Query().AllHistories(rctx, fc.Args["id"].(string), fc.Args["page"].(int64), fc.Args["size"].(int64), fc.Args["desc"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -7428,6 +7440,50 @@ func (ec *executionContext) fieldContext_Subscribe_update_time(ctx context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadTokenPayload_id(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadTokenPayload_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11775,6 +11831,13 @@ func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("UploadTokenPayload")
+		case "id":
+
+			out.Values[i] = ec._UploadTokenPayload_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "access_key":
 
 			out.Values[i] = ec._UploadTokenPayload_access_key(ctx, field, obj)

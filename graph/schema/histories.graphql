@@ -4,8 +4,8 @@ extend type Query {
     """
     allHistories(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true,
     ):[History]! @auth
 }

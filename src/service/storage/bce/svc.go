@@ -71,7 +71,7 @@ func (b *BCE) GetUrl(ctx context.Context, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := utils.GeneratePath(userId.Hex(), path)
+	p := utils.GenerateResourcePath(userId.Hex(), path)
 	// 生成下载地址,有效时间 30 min
 	url := b.Bos.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
 	return url, nil
@@ -82,7 +82,7 @@ func (b *BCE) Delete(ctx context.Context, path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	p := utils.GeneratePath(userId.Hex(), path)
+	p := utils.GenerateResourcePath(userId.Hex(), path)
 	// 删除文件
 	err = b.Bos.DeleteObject(b.Config.BucketName, p)
 	if err != nil {
