@@ -86,6 +86,16 @@ func (s *Svc) DeleteSubscribe(ctx context.Context, id primitive.ObjectID) error 
 // GetSubscribe 获取订阅
 func (s *Svc) GetSubscribe(ctx context.Context, id primitive.ObjectID) (*Subscribe, error) {
 	var subscribe Subscribe
+	if id == primitive.NilObjectID {
+		return &Subscribe{
+			ObjectID:   primitive.NilObjectID,
+			Name:       s.DefaultSubscribeName,
+			Capacity:   s.DefaultCapacity,
+			Enabled:    true,
+			CreateTime: 0,
+			UpdateTime: 0,
+		}, nil
+	}
 	err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&subscribe)
 	if err != nil {
 		return nil, err

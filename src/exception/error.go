@@ -26,7 +26,9 @@ var (
 	ErrTitleTooLong   = GqlError("标题太长啦", "TITLE_TOO_LONG")
 	ErrContentTooLong = GqlError("内容太长啦", "CONTENT_TOO_LONG")
 	ErrContentExist   = GqlError("内容已存在", "CONTENT_EXIST")
+	ErrResourceExist  = GqlError("资源已存在", "RESOURCE_EXIST")
 	ErrSubscribeExist = GqlError("订阅已存在", "SUBSCRIBE_EXIST")
+	ErrInvalidSession = GqlError("无效的Session", "INVALID_SESSION")
 
 	ErrPermissionDenied = GqlError("访问权限不足", "PERMISSION_DENIED")
 )
@@ -45,8 +47,5 @@ func InternalError(err error) error {
 func GqlError(message, code string) error {
 	return &gqlerror.Error{
 		Message: message,
-		Extensions: map[string]interface{}{
-			"code": code,
-		},
 	}
 }

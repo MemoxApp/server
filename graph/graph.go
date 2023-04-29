@@ -24,6 +24,10 @@ func GraphqlHandler(conf config.Config, db *mongo.Database, redis *redis.Client)
 	}
 	srv := handler.New(generated.NewExecutableSchema(c))
 	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.MultipartForm{
+		MaxMemory:     32 * 1024 * 1024,
+		MaxUploadSize: 20 * 1024 * 1024,
+	})
 	srv.SetQueryCache(lru.New(1000))
 	srv.Use(&user.Extension{
 		UserSvc: user.NewUserSvc(conf.User, db, redis),

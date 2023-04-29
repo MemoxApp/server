@@ -54,6 +54,9 @@ func (r *mutationResolver) AddMemory(ctx context.Context, input generated.AddMem
 		return "", err
 	}
 	newMemory, err := r.memorySvc.NewMemory(ctx, input.Title, input.Content, tags)
+	if err != nil {
+		return newMemory, err
+	}
 	err = r.resourceSvc.UpdateReferences(ctx, "", input.Content, newMemory)
 	if err != nil {
 		return newMemory, err

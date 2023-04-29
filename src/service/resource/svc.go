@@ -39,16 +39,20 @@ func NewResourceSvc(conf Config, db *mongo.Database, redis *redis.Client, sto ut
 }
 
 // CheckResourceExist 检查资源是否存在
-func (s *Svc) CheckResourceExist(ctx context.Context, path string) (bool, error) {
+func (s *Svc) CheckResourceExist(ctx context.Context, path string) (*Resource, error) {
+	id, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var resource Resource
-	err := s.m.FindOne(ctx, bson.M{"path": path}).Decode(&resource)
+	err = s.m.FindOne(ctx, bson.M{"path": path, "uid": id}).Decode(&resource)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return false, nil
+			return nil, nil
 		}
-		return true, err
+		return nil, err
 	}
-	return true, nil
+	return &resource, nil
 }
 
 // NewResource 创建资源
@@ -57,8 +61,13 @@ func (s *Svc) NewResource(ctx context.Context, path string, size int64) (string,
 	if err != nil {
 		return "", err
 	}
-	if exist {
-		return "", exception.ErrContentExist
+	if exist != nil {
+		if exist.Size > 0 {
+			return "", exception.ErrResourceExist
+		} else {
+			// 创建了但未使用的资源
+			return exist.ObjectID.Hex(), nil
+		}
 	}
 	id, err := user.GetUserFromJwt(ctx)
 	if err != nil {
@@ -303,5 +312,6 @@ func (s *Svc) LocalUpload(ctx context.Context, session string, upload graphql.Up
 	if err != nil {
 		return "", err
 	}
-	return s.NewResource(ctx, l, size)
+	err = s.UpdateResourceSize(ctx, l, size)
+	return l, err
 }

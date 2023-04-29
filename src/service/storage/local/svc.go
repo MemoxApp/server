@@ -78,7 +78,10 @@ func (b *Local) Upload(ctx context.Context, session string, upload graphql.Uploa
 	if err != nil {
 		return "", 0, err
 	}
-	s := b.r.Get(ctx, "Local-"+session).String()
+	s, err := b.r.Get(ctx, "Local-"+session).Result()
+	if err != nil {
+		return "", 0, exception.ErrInvalidSession
+	}
 	path := utils.GeneratePath(userId.Hex(), s)
 	absPath := filepath.Clean(b.Config.Folder + "/" + s)
 	f, err := os.OpenFile(absPath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0666)
@@ -88,7 +91,7 @@ func (b *Local) Upload(ctx context.Context, session string, upload graphql.Uploa
 	// 关闭文件
 	defer f.Close()
 	// 写入文件
-	var buffer []byte
+	var buffer = make([]byte, 1024)
 	var size int64
 	for {
 		n, err := upload.File.Read(buffer)
@@ -104,5 +107,6 @@ func (b *Local) Upload(ctx context.Context, session string, upload graphql.Uploa
 			return "", 0, err
 		}
 	}
+	_, _ = b.r.Del(ctx, "Local-"+session).Result()
 	return path, size, nil
 }

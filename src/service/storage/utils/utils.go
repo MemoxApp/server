@@ -5,8 +5,8 @@ import (
 	"regexp"
 )
 
-// FileNamePattern 文件名匹配格式：仅支持文件名16进制值，后缀名为 png、jpg、jpeg、gif、webp 或无后缀的图片的上传
-const FileNamePattern = "[0-9a-fA-F]+(\\.(png|jpg|jpeg|gif|webp)|)"
+// FileNamePattern 文件名匹配格式：仅支持文件名 16 进制值 (16位或32位)，后缀名为 png、jpg、jpeg、gif、webp 或无后缀的图片的上传
+const FileNamePattern = "([0-9a-fA-F]{16}|[0-9a-fA-F]{32})(\\.(png|jpg|jpeg|gif|webp)|)"
 
 func CheckFileName(path string) bool {
 	r, _ := regexp.Compile("^" + FileNamePattern + "$")

@@ -10,3 +10,7 @@ type Subscribe struct {
 	CreateTime int64              `bson:"create_time"` // 创建时间
 	UpdateTime int64              `bson:"update_time"` // 修改时间
 }
+
+const KB = 1024
+const MB = 1024 * KB
+const GB = 1024 * MB

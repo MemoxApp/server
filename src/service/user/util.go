@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"time_speak_server/src/exception"
 )
 
 // EncryptPassword 使用BCrypt加密密码
@@ -38,6 +39,9 @@ func GenerateJWTToken(claims JWTClaims, secret string) (string, error) {
 // GetUserFromJwt 从token中获取用户信息
 func GetUserFromJwt(c context.Context) (myID primitive.ObjectID, err error) {
 	authInfo := GetJWTClaims(c)
+	if authInfo.ID == "" {
+		return primitive.NilObjectID, exception.ErrPermissionDenied
+	}
 	myID, err = primitive.ObjectIDFromHex(authInfo.ID)
 	return
 }

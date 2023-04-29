@@ -36,7 +36,7 @@ func main() {
 	resourceSvc := resource.NewResourceSvc(conf.Resource, database, redis, sto)
 
 	r := gin.Default()
-	r.POST("/query", graph.GraphqlHandler(conf, database, redis))
+	r.Any("/query", graph.GraphqlHandler(conf, database, redis))
 	r.GET("/", graph.PlaygroundHandler())
 	r.POST("/notify/bce", bce.Callback(resourceSvc))
 	err = r.Run()
