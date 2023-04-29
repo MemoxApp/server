@@ -29,6 +29,7 @@ deleteSubscribe(input: ID!): Boolean!
 百度云BOS上传测试
 资源链接生成测试
 
+```
 
 以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
 
