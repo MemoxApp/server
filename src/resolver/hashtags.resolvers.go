@@ -35,6 +35,11 @@ func (r *mutationResolver) UpdateHashTag(ctx context.Context, input generated.Ha
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	// 查询是否存在
+	_, err = r.hashtagSvc.GetHashTagByID(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	var toUpdate []opts.Option
 	if input.Name != nil {
 		toUpdate = append(toUpdate, opts.WithString("name", *input.Name))
@@ -55,7 +60,24 @@ func (r *mutationResolver) DeleteHashTag(ctx context.Context, input string) (boo
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	tag, err := r.hashtagSvc.GetHashTagByID(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if !tag.Archived {
+		return false, exception.ErrHashTagNotArchived
+	}
+	countByHashTag, err := r.memorySvc.GetMemoriesCountByHashTag(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if countByHashTag > 0 {
+		return false, exception.ErrHashTagHasMemories
+	}
 	err = r.hashtagSvc.DeleteHashTag(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

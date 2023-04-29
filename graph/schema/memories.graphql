@@ -1,6 +1,8 @@
 extend type Query {
-    "所有Memories，按修改时间排序，默认降序"
+    "所有Memories，默认按修改时间降序"
     allMemories(input: ListInput!):[Memory]! @auth
+    "指定话题下的所有Memories，默认按修改时间降序"
+    allMemoriesByTag(tag:ID!,input: ListInput!):[Memory]! @auth
     "Memory 详情"
     memory(input: ID!): Memory! @auth
 }

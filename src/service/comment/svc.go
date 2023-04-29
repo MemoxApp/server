@@ -33,13 +33,13 @@ func NewCommentSvc(conf Config, db *mongo.Database, redis *redis.Client) *Svc {
 }
 
 // CheckCommentExist 检查回复是否存在
-func (s *Svc) CheckCommentExist(ctx context.Context, content string) (bool, error) {
+func (s *Svc) CheckCommentExist(ctx context.Context, content string, commentID, parentID primitive.ObjectID) (bool, error) {
 	uid, err := user.GetUserFromJwt(ctx)
 	if err != nil {
 		return false, err
 	}
 	var comment Comment
-	err = s.m.FindOne(ctx, bson.M{"uid": uid, "content": content}).Decode(&comment) // 检查自己的回复
+	err = s.m.FindOne(ctx, bson.M{"uid": uid, "content": content, "comment_id": commentID, "parent_id": parentID}).Decode(&comment) // 检查自己的回复
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return false, nil
@@ -51,7 +51,7 @@ func (s *Svc) CheckCommentExist(ctx context.Context, content string) (bool, erro
 
 // NewComment 创建回复
 func (s *Svc) NewComment(ctx context.Context, content string, commentID, parentID primitive.ObjectID, tags []primitive.ObjectID) (string, error) {
-	exist, err := s.CheckCommentExist(ctx, content)
+	exist, err := s.CheckCommentExist(ctx, content, commentID, parentID)
 	if err != nil {
 		return "", err
 	}
@@ -98,8 +98,21 @@ func (s *Svc) DeleteComment(ctx context.Context, id primitive.ObjectID) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
+	comment, err := s.GetComment(ctx, id)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return exception.ErrCommentNotFound
+		}
+		return err
+	}
+	if !comment.Archived {
+		return exception.ErrCommentNotArchived
+	}
+	result, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
 	s.c.Del(ctx, fmt.Sprintf("Comment-%s", id.Hex()))
+	if result.DeletedCount == 0 {
+		return exception.ErrCommentNotFound
+	}
 	return err
 }
 

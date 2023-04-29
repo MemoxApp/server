@@ -12,11 +12,6 @@ subComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [SubComment]!
 
 Mutation
 
-addComment(input: AddCommentInput!): ID!
-updateComment(input: UpdateCommentInput!): Boolean!
-deleteComment(input: ID!): Boolean!
-updateHashTag(input: HashTagInput!): Boolean!
-deleteHashTag(input: ID!): Boolean!
 updateMemory(input: UpdateMemoryInput!): Boolean!
 archiveMemory(input: ID!,archived: Boolean!): Boolean!
 deleteMemory(input: ID!): Boolean!
@@ -28,7 +23,6 @@ deleteSubscribe(input: ID!): Boolean!
 其他
 百度云BOS上传测试
 资源链接生成测试
-
 ```
 
 以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
@@ -224,6 +218,47 @@ Input
 }
 ```
 
+### 获取指定话题下的 Memories
+
+Query
+
+```graphql
+query ($tag: ID!, $input: ListInput!) {
+    allMemoriesByTag(tag: $tag, input: $input) {
+        id
+        user {
+            id
+            username
+            avatar
+        }
+        title
+        content
+        hashtags {
+            id
+            name
+        }
+        archived
+        create_time
+        update_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "tag": "6448e4eb03bbc9b5380ded1d",
+  "input": {
+    "page": 0,
+    "size": 10,
+    "byCreate": false,
+    "desc": true,
+    "archived": false
+  }
+}
+```
+
 ## 标签
 
 ### 标签列表
@@ -253,6 +288,114 @@ Input
     "desc": true,
     "archived": false
   }
+}
+```
+
+### 更新标签
+
+Query
+
+```graphql
+mutation($input:HashTagInput!){
+    updateHashTag(input:$input)
+}
+```
+
+Input  
+`name`和`archived`字段非必须
+
+```json
+{
+  "input": {
+    "id": "644d2af60cef546afdd38364",
+    "name": "<新标签名>",
+    "archived": true
+  }
+}
+```
+
+### 删除标签
+
+**仅已归档标签且无Memory引用的标签可被删除**  
+Query
+
+```graphql
+mutation($input:ID!){
+    deleteHashTag(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": "644d2af60cef546afdd38363"
+}
+```
+
+## 回复
+
+### 新增回复
+
+Query
+
+```graphql
+mutation($input:AddCommentInput!){
+    addComment(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": {
+    "id": "<subComment为false时为回复的Memory id,true时为回复对象的id>",
+    "subComment": false,
+    "content": "<回复内容>"
+  }
+}
+```
+
+### 更新回复
+
+Query
+
+```graphql
+mutation($input:UpdateCommentInput!){
+    updateComment(input:$input)
+}
+```
+
+Input  
+`content`和`archived`字段非必须
+
+```json
+{
+  "input": {
+    "id": "644d318b8aa787230d087d24",
+    "content": "<修改后的回复>",
+    "archived": false
+  }
+}
+```
+
+### 删除回复
+
+**仅已归档回复可被删除**  
+Query
+
+```graphql
+mutation($input:ID!){
+    deleteComment(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": "644d30cf5a41ee83413e3301"
 }
 ```
 
@@ -310,7 +453,7 @@ Input
 }
 ```
 
-## 资源相关
+## 资源
 
 ### 获取资源列表
 

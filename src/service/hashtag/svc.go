@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"regexp"
 	"time"
+	"time_speak_server/src/exception"
 	"time_speak_server/src/opts"
 	"time_speak_server/src/service/cache"
 	"time_speak_server/src/service/user"
@@ -68,8 +69,11 @@ func (s *Svc) DeleteHashTag(ctx context.Context, id primitive.ObjectID) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
+	result, err := s.m.DeleteOne(ctx, bson.M{"_id": id, "uid": uid, "archived": true}) // 只有归档的才能删除
 	s.c.Del(ctx, fmt.Sprintf("#-%s", id.Hex()))
+	if result.DeletedCount == 0 {
+		return exception.ErrHashTagNotFound
+	}
 	return err
 }
 
@@ -103,7 +107,7 @@ func (s *Svc) GetHashTag(ctx context.Context, name string) (*HashTag, error) {
 		err = s.m.FindOne(ctx, bson.M{"uid": uid, "name": name}).Decode(&tag)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				return nil, errHashTagNotFound
+				return nil, exception.ErrHashTagNotFound
 			}
 			return nil, err
 		}
@@ -168,7 +172,7 @@ func (s *Svc) GetHashTagByID(ctx context.Context, id primitive.ObjectID) (*HashT
 		err := s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&tag) // 只能获取自己的标签
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				return nil, errHashTagNotFound
+				return nil, exception.ErrHashTagNotFound
 			}
 			return nil, err
 		}

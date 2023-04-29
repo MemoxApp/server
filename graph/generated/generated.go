@@ -133,16 +133,17 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AllComments   func(childComplexity int, id string, page int, size int, desc bool) int
-		AllHashTags   func(childComplexity int, input ListInput) int
-		AllHistories  func(childComplexity int, id string, page int, size int, desc bool) int
-		AllMemories   func(childComplexity int, input ListInput) int
-		AllResources  func(childComplexity int, page int64, size int64, byCreate bool, desc bool) int
-		AllSubscribes func(childComplexity int) int
-		CurrentUser   func(childComplexity int) int
-		Memory        func(childComplexity int, input string) int
-		Status        func(childComplexity int) int
-		SubComments   func(childComplexity int, id string, page int, size int, desc bool) int
+		AllComments      func(childComplexity int, id string, page int, size int, desc bool) int
+		AllHashTags      func(childComplexity int, input ListInput) int
+		AllHistories     func(childComplexity int, id string, page int, size int, desc bool) int
+		AllMemories      func(childComplexity int, input ListInput) int
+		AllMemoriesByTag func(childComplexity int, tag string, input ListInput) int
+		AllResources     func(childComplexity int, page int64, size int64, byCreate bool, desc bool) int
+		AllSubscribes    func(childComplexity int) int
+		CurrentUser      func(childComplexity int) int
+		Memory           func(childComplexity int, input string) int
+		Status           func(childComplexity int) int
+		SubComments      func(childComplexity int, id string, page int, size int, desc bool) int
 	}
 
 	Resource struct {
@@ -252,6 +253,7 @@ type QueryResolver interface {
 	AllHashTags(ctx context.Context, input ListInput) ([]*hashtag.HashTag, error)
 	AllHistories(ctx context.Context, id string, page int, size int, desc bool) ([]*history.History, error)
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
+	AllMemoriesByTag(ctx context.Context, tag string, input ListInput) ([]*memory.Memory, error)
 	Memory(ctx context.Context, input string) (*memory.Memory, error)
 	AllResources(ctx context.Context, page int64, size int64, byCreate bool, desc bool) ([]*resource.Resource, error)
 	Status(ctx context.Context) (*ServerStatus, error)
@@ -810,6 +812,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.AllMemories(childComplexity, args["input"].(ListInput)), true
+
+	case "Query.allMemoriesByTag":
+		if e.complexity.Query.AllMemoriesByTag == nil {
+			break
+		}
+
+		args, err := ec.field_Query_allMemoriesByTag_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AllMemoriesByTag(childComplexity, args["tag"].(string), args["input"].(ListInput)), true
 
 	case "Query.allResources":
 		if e.complexity.Query.AllResources == nil {
@@ -1387,8 +1401,10 @@ type History {
     create_time: DateTime!
 }`, BuiltIn: false},
 	{Name: "../schema/memories.graphql", Input: `extend type Query {
-    "所有Memories，按修改时间排序，默认降序"
+    "所有Memories，默认按修改时间降序"
     allMemories(input: ListInput!):[Memory]! @auth
+    "指定话题下的所有Memories，默认按修改时间降序"
+    allMemoriesByTag(tag:ID!,input: ListInput!):[Memory]! @auth
     "Memory 详情"
     memory(input: ID!): Memory! @auth
 }
@@ -2018,6 +2034,30 @@ func (ec *executionContext) field_Query_allHistories_args(ctx context.Context, r
 		}
 	}
 	args["desc"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_allMemoriesByTag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["tag"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tag"] = arg0
+	var arg1 ListInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -5665,6 +5705,99 @@ func (ec *executionContext) fieldContext_Query_allMemories(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_allMemories_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_allMemoriesByTag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_allMemoriesByTag(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().AllMemoriesByTag(rctx, fc.Args["tag"].(string), fc.Args["input"].(ListInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Auth == nil {
+				return nil, errors.New("directive auth is not implemented")
+			}
+			return ec.directives.Auth(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*memory.Memory); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/memory.Memory`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*memory.Memory)
+	fc.Result = res
+	return ec.marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_allMemoriesByTag(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Memory_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Memory_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Memory_title(ctx, field)
+			case "content":
+				return ec.fieldContext_Memory_content(ctx, field)
+			case "hashtags":
+				return ec.fieldContext_Memory_hashtags(ctx, field)
+			case "archived":
+				return ec.fieldContext_Memory_archived(ctx, field)
+			case "create_time":
+				return ec.fieldContext_Memory_create_time(ctx, field)
+			case "update_time":
+				return ec.fieldContext_Memory_update_time(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Memory", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_allMemoriesByTag_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -11096,6 +11229,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_allMemories(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "allMemoriesByTag":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_allMemoriesByTag(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

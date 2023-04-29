@@ -15,6 +15,7 @@ import (
 	"time_speak_server/src/service/user"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // ID is the resolver for the id field.
@@ -73,13 +74,16 @@ func (r *mutationResolver) AddComment(ctx context.Context, input generated.AddCo
 	}
 	commentID, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return "", err
+		return "", exception.ErrInvalidID
 	}
 	var parentID primitive.ObjectID
 	if input.SubComment {
 		// 子回复，在回复数据表查找 ParentID
 		getComment, err := r.commentSvc.GetComment(ctx, commentID)
 		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return "", exception.ErrCommentNotFound
+			}
 			return "", err
 		}
 		if getComment.ParentID == getComment.CommentID {
@@ -88,6 +92,14 @@ func (r *mutationResolver) AddComment(ctx context.Context, input generated.AddCo
 			parentID = getComment.ParentID
 		}
 	} else {
+		// 检查回忆是否存在
+		_, err := r.memorySvc.GetMemory(ctx, commentID)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return "", exception.ErrMemoryNotFound
+			}
+			return "", err
+		}
 		// 主回复，直接使用回忆 ID 作为 ParentID
 		parentID = commentID
 	}
@@ -130,6 +142,9 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, input string) (boo
 		return false, exception.ErrInvalidID
 	}
 	err = r.commentSvc.DeleteComment(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

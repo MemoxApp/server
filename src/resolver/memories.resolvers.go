@@ -154,6 +154,25 @@ func (r *queryResolver) AllMemories(ctx context.Context, input generated.ListInp
 	return memories, nil
 }
 
+// AllMemoriesByTag is the resolver for the allMemoriesByTag field.
+func (r *queryResolver) AllMemoriesByTag(ctx context.Context, tag string, input generated.ListInput) ([]*memory.Memory, error) {
+	tagID, err := primitive.ObjectIDFromHex(tag)
+	if err != nil {
+		return nil, exception.ErrInvalidID
+	}
+	memories, err := r.memorySvc.GetMemoriesByHashTag(ctx, tagID, input.Page, input.Size, input.ByCreate, input.Desc, input.Archived)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range memories {
+		m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return memories, nil
+}
+
 // Memory is the resolver for the memory field.
 func (r *queryResolver) Memory(ctx context.Context, input string) (*memory.Memory, error) {
 	id, err := primitive.ObjectIDFromHex(input)

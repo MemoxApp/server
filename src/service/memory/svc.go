@@ -163,3 +163,56 @@ func (s *Svc) GetMemories(ctx context.Context, page, size int64, byCreate, desc,
 	}
 	return memory, nil
 }
+
+// GetMemoriesByHashTag 根据标签获取记忆列表
+func (s *Svc) GetMemoriesByHashTag(ctx context.Context, tagID primitive.ObjectID, page, size int64, byCreate, desc, archived bool) ([]*Memory, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var memory []*Memory
+	skip := page * size
+	order := 1
+	if desc {
+		order = -1
+	}
+	sort := bson.M{
+		"update_time": order,
+	}
+	if byCreate {
+		sort = bson.M{
+			"create_time": order,
+		}
+	}
+	data, err := s.m.Find(ctx, bson.M{"uid": uid, "archived": archived, "hash_tags": bson.M{"$in": []primitive.ObjectID{tagID}}}, &options.FindOptions{
+		Skip:  &skip,
+		Limit: &size,
+		Sort:  sort,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer data.Close(ctx)
+	err = data.All(ctx, &memory)
+	if err != nil {
+		return nil, err
+	}
+	return memory, nil
+}
+
+// GetMemoriesCountByHashTag 根据标签获取记忆数量
+func (s *Svc) GetMemoriesCountByHashTag(ctx context.Context, tagID primitive.ObjectID) (int64, error) {
+	uid, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return 0, err
+	}
+	data, err := s.m.CountDocuments(ctx,
+		bson.M{
+			"uid":       uid,
+			"hash_tags": bson.M{"$in": []primitive.ObjectID{tagID}}},
+	)
+	if err != nil {
+		return 0, err
+	}
+	return data, nil
+}

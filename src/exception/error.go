@@ -23,14 +23,19 @@ var (
 	ErrDeleteResource         = GqlError("删除资源文件错误", "DELETE_RESOURCE_ERROR")
 	ErrInvalidStorageProvider = GqlError("不合法的存储提供者", "INVALID_STORAGE_PROVIDER")
 
-	ErrTitleTooLong   = GqlError("标题太长啦", "TITLE_TOO_LONG")
-	ErrContentTooLong = GqlError("内容太长啦", "CONTENT_TOO_LONG")
-	ErrContentExist   = GqlError("内容已存在", "CONTENT_EXIST")
-	ErrResourceExist  = GqlError("资源已存在", "RESOURCE_EXIST")
-	ErrSubscribeExist = GqlError("订阅已存在", "SUBSCRIBE_EXIST")
-	ErrInvalidSession = GqlError("无效的Session", "INVALID_SESSION")
-
-	ErrPermissionDenied = GqlError("访问权限不足", "PERMISSION_DENIED")
+	ErrTitleTooLong       = GqlError("标题太长啦", "TITLE_TOO_LONG")
+	ErrContentTooLong     = GqlError("内容太长啦", "CONTENT_TOO_LONG")
+	ErrContentExist       = GqlError("内容已存在", "CONTENT_EXIST")
+	ErrResourceExist      = GqlError("资源已存在", "RESOURCE_EXIST")
+	ErrSubscribeExist     = GqlError("订阅已存在", "SUBSCRIBE_EXIST")
+	ErrInvalidSession     = GqlError("无效的Session", "INVALID_SESSION")
+	ErrCommentNotFound    = GqlError("回复不存在", "COMMENT_NOT_FOUND")
+	ErrMemoryNotFound     = GqlError("记忆不存在", "MEMORY_NOT_FOUND")
+	ErrCommentNotArchived = GqlError("回复未归档，无法删除", "COMMENT_NOT_ARCHIVED")
+	ErrPermissionDenied   = GqlError("访问权限不足", "PERMISSION_DENIED")
+	ErrHashTagNotFound    = GqlError("话题不存在", "HASH_TAG_NOT_FOUND")
+	ErrHashTagNotArchived = GqlError("话题未归档，无法删除", "HASH_TAG_NOT_ARCHIVED")
+	ErrHashTagHasMemories = GqlError("话题下存在记忆，无法删除", "HASH_TAG_HAS_MEMORIES")
 )
 
 func InternalError(err error) error {
