@@ -43,7 +43,7 @@ func (r *commentResolver) User(ctx context.Context, obj *comment.Comment) (*user
 
 // SubComments is the resolver for the subComments field.
 func (r *commentResolver) SubComments(ctx context.Context, obj *comment.Comment) ([]*comment.Comment, error) {
-	comments, err := r.commentSvc.GetComments(ctx, obj.ObjectID.Hex(), 0, 5, true, true, false)
+	comments, err := r.commentSvc.GetComments(ctx, obj.ObjectID.Hex(), true, 0, 5, true, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -89,10 +89,10 @@ func (r *mutationResolver) AddComment(ctx context.Context, input generated.AddCo
 			}
 			return "", err
 		}
-		if getComment.ParentID == getComment.CommentID {
-			parentID = getComment.ObjectID
+		if getComment.CommentID == primitive.NilObjectID { // 顶层回复
+			parentID = getComment.ObjectID // 使用顶层回复 ID 作为 ParentID
 		} else {
-			parentID = getComment.ParentID
+			parentID = getComment.ParentID // 使用父回复 ID 作为 ParentID（递归回顶层回复ID）
 		}
 	} else {
 		// 检查回忆是否存在
@@ -105,6 +105,7 @@ func (r *mutationResolver) AddComment(ctx context.Context, input generated.AddCo
 		}
 		// 主回复，直接使用回忆 ID 作为 ParentID
 		parentID = commentID
+		commentID = primitive.NilObjectID // 主回复 CommentID 为空
 	}
 	newComment, err := r.commentSvc.NewComment(ctx, input.Content, commentID, parentID, tags)
 	if err != nil {
@@ -164,7 +165,7 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, input string) (boo
 
 // AllComments is the resolver for the allComments field.
 func (r *queryResolver) AllComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error) {
-	comments, err := r.commentSvc.GetComments(ctx, id, page, size, true, desc, false)
+	comments, err := r.commentSvc.GetComments(ctx, id, false, page, size, true, desc, false)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +177,26 @@ func (r *queryResolver) AllComments(ctx context.Context, id string, page int64, 
 
 // SubComments is the resolver for the subComments field.
 func (r *queryResolver) SubComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error) {
-	return r.AllComments(ctx, id, page, size, desc)
+	// 检查回复是否存在
+	commentID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, exception.ErrInvalidID
+	}
+	_, err = r.commentSvc.GetComment(ctx, commentID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, exception.ErrCommentNotFound
+		}
+		return nil, err
+	}
+	comments, err := r.commentSvc.GetComments(ctx, id, true, page, size, true, desc, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range comments {
+		m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content) // 插入资源链接
+	}
+	return comments, nil
 }
 
 // ID is the resolver for the id field.

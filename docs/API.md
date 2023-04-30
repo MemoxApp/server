@@ -9,12 +9,6 @@ Memory 更新后 存在历史记录对资源的引用
 ## 待测试接口
 
 ```
-Query
-
-allComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [Comment]!
-subComments(id: ID!,page: Int!,size: Int!,desc: Boolean! = true): [SubComment]!
-
-
 Mutation
 
 addSubscribe(input: AddSubscribeInput!): ID!
@@ -499,6 +493,92 @@ Input
 ```json
 {
   "input": "644d30cf5a41ee83413e3301"
+}
+```
+
+### 回复列表
+
+Query
+
+```graphql
+query ($id: ID!, $page: Int64!, $size: Int64!, $desc: Boolean!) {
+    allComments(
+        id: $id
+        page: $page
+        size: $size
+        desc: $desc
+    ) {
+        id
+        user {
+            id
+            username
+            avatar
+        }
+        memory{
+            id
+            content
+        }
+        content
+        hashtags {
+            id
+            name
+        }
+        create_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "id": "<Memory ID>",
+  "page": 0,
+  "size": 10,
+  "desc": true
+}
+```
+
+### 子回复列表
+
+Query
+
+```graphql
+query ($id: ID!, $page: Int64!, $size: Int64!, $desc: Boolean!) {
+    subComments(
+        id: $id
+        page: $page
+        size: $size
+        desc: $desc
+    ) {
+        id
+        user {
+            id
+            username
+            avatar
+        }
+        comment{
+            id
+            content
+        }
+        content
+        hashtags {
+            id
+            name
+        }
+        create_time
+    }
+}
+```
+
+Input
+
+```json
+{
+  "id": "<Top-Level 回复 ID>",
+  "page": 0,
+  "size": 10,
+  "desc": true
 }
 ```
 

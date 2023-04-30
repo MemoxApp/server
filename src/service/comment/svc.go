@@ -134,7 +134,7 @@ func (s *Svc) GetComment(ctx context.Context, id primitive.ObjectID) (*Comment, 
 }
 
 // GetComments 获取回复列表
-func (s *Svc) GetComments(ctx context.Context, parentID string, page, size int64, byCreate, desc, archived bool) ([]*Comment, error) {
+func (s *Svc) GetComments(ctx context.Context, parentID string, subComment bool, page, size int64, byCreate, desc, archived bool) ([]*Comment, error) {
 	var comment []*Comment
 	skip := page * size
 	order := 1
@@ -153,7 +153,13 @@ func (s *Svc) GetComments(ctx context.Context, parentID string, page, size int64
 	if err != nil {
 		return nil, err
 	}
-	data, err := s.m.Find(ctx, bson.M{"parent_id": id, "archived": archived}, &options.FindOptions{
+	query := bson.M{"parent_id": id, "archived": archived}
+	if !subComment {
+		query["comment_id"] = primitive.NilObjectID
+	} else {
+		query["comment_id"] = bson.M{"$ne": primitive.NilObjectID}
+	}
+	data, err := s.m.Find(ctx, query, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &size,
 		Sort:  sort,
