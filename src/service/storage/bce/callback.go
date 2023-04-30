@@ -9,8 +9,18 @@ import (
 	"time_speak_server/src/service/resource"
 )
 
-func Callback(m *mongo.Collection) func(c *gin.Context) {
+func Callback(conf Config, m *mongo.Collection) func(c *gin.Context) {
+	if conf.CallbackToken == "" {
+		panic("百度云回调token未配置")
+	} else {
+		log.Info("百度云回调地址: /notify/bce?token=" + conf.CallbackToken)
+	}
 	return func(c *gin.Context) {
+		token := c.Query("token")
+		if token != conf.CallbackToken {
+			log.Error("百度云回调token错误")
+			return
+		}
 		body := c.Request.Body
 		bytes, err := io.ReadAll(body)
 		if err != nil {

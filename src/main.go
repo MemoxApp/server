@@ -40,7 +40,7 @@ func main() {
 		r.GET("/play", graph.PlaygroundHandler())
 	}
 	r.Static("/resources", conf.Storage.Local.Folder+"/resources")
-	r.POST("/notify/bce", bce.Callback(database.Collection("resource")))
+	r.Any("/notify/bce", bce.Callback(conf.Storage.BCE, database.Collection("resource")))
 	err = r.Run()
 	if err != nil {
 		panic(err)

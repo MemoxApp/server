@@ -8,4 +8,5 @@ type Config struct {
 	Region          string `yaml:"region"`
 	CDN             bool   `yaml:"cdn"`
 	CdnAuthKey      string `yaml:"cdn_auth_key"`
+	CallbackToken   string `yaml:"callback_token"`
 }
