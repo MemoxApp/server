@@ -18,9 +18,9 @@ import (
 type ContextKey string
 
 const (
-	VersionName = "0.1.1"
+	VersionName = "1.0"
 	VersionCode = 1
-	Build       = 2304301628
+	Build       = 2304301858
 )
 
 type Config struct {
