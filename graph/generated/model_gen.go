@@ -63,7 +63,7 @@ type LocalUploadInput struct {
 }
 
 type LoginInput struct {
-	Username string `json:"username"`
+	Mail     string `json:"mail"`
 	Password string `json:"password"`
 }
 

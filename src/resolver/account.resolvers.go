@@ -6,6 +6,7 @@ package resolver
 
 import (
 	"context"
+	"strings"
 	"time"
 	"time_speak_server/graph/generated"
 	"time_speak_server/src/exception"
@@ -18,15 +19,16 @@ import (
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input generated.LoginInput) (*generated.LoginPayload, error) {
-	match, err := r.userSvc.CheckPasswordByUsername(ctx, input.Username, input.Password)
+	mailToLower := strings.ToLower(input.Mail)
+	match, err := r.userSvc.CheckPasswordByMail(ctx, mailToLower, input.Password)
 	if err != nil {
-		return nil, exception.InternalError(err)
+		return nil, err
 	}
 	if !match {
-		return nil, exception.ErrUsernameOrPasswordWrong
+		return nil, exception.ErrEmailOrPasswordWrong
 	}
 
-	jwt, token, err := r.userSvc.GetTokenByUsername(ctx, input.Username)
+	jwt, token, err := r.userSvc.GetTokenByMail(ctx, mailToLower)
 	if err != nil {
 		return nil, exception.InternalError(err)
 	}
@@ -41,12 +43,13 @@ func (r *mutationResolver) Login(ctx context.Context, input generated.LoginInput
 
 // Register is the resolver for the register field.
 func (r *mutationResolver) Register(ctx context.Context, input generated.RegisterInput) (string, error) {
-	if r.mailSvc.CheckEmailVerifyCode(ctx, input.Email, input.EmailVerifyCode) {
-		_, err := r.userSvc.GetUserByMail(ctx, input.Email)
+	mailToLower := strings.ToLower(input.Email)
+	if r.mailSvc.CheckEmailVerifyCode(ctx, mailToLower, input.EmailVerifyCode) {
+		_, err := r.userSvc.GetUserByMail(ctx, mailToLower)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				// 未注册
-				id, err := r.userSvc.AddUser(ctx, input.Username, input.Password, input.Email)
+				id, err := r.userSvc.AddUser(ctx, input.Username, input.Password, mailToLower)
 				if err != nil {
 					return "", err
 				}
@@ -62,8 +65,9 @@ func (r *mutationResolver) Register(ctx context.Context, input generated.Registe
 
 // Forget is the resolver for the forget field.
 func (r *mutationResolver) Forget(ctx context.Context, input generated.ForgetInput) (bool, error) {
-	if r.mailSvc.CheckEmailVerifyCode(ctx, input.Email, input.EmailVerifyCode) {
-		_, err := r.userSvc.GetUserByMail(ctx, input.Email)
+	mailToLower := strings.ToLower(input.Email)
+	if r.mailSvc.CheckEmailVerifyCode(ctx, mailToLower, input.EmailVerifyCode) {
+		_, err := r.userSvc.GetUserByMail(ctx, mailToLower)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				// 未注册
@@ -72,7 +76,7 @@ func (r *mutationResolver) Forget(ctx context.Context, input generated.ForgetInp
 				return false, err
 			}
 		}
-		u, err := r.userSvc.GetUserByMail(ctx, input.Email)
+		u, err := r.userSvc.GetUserByMail(ctx, mailToLower)
 		if err != nil {
 			return false, err
 		}
@@ -90,7 +94,7 @@ func (r *mutationResolver) Forget(ctx context.Context, input generated.ForgetInp
 			return false, err
 		}
 
-		_ = r.r.Del(ctx, mail.CodeKey(input.Email)).Err()
+		_ = r.r.Del(ctx, mail.CodeKey(mailToLower)).Err()
 		return true, nil
 	}
 	return false, exception.ErrVerifyCodeWrong
@@ -102,7 +106,8 @@ func (r *mutationResolver) SendEmailCode(ctx context.Context, input generated.Se
 	if input.Register {
 		act = "注册"
 	}
-	err := r.mailSvc.NewEmailVerifyCode(ctx, input.Mail, act)
+	mailToLower := strings.ToLower(input.Mail)
+	err := r.mailSvc.NewEmailVerifyCode(ctx, mailToLower, act)
 	if err != nil {
 		if err == mail.ErrVerifyCodeCoolDown {
 			return false, exception.ErrTooManyRequest

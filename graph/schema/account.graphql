@@ -23,7 +23,7 @@ input ForgetInput {
 }
 
 input LoginInput {
-    username: String!
+    mail: String!
     password: String!
 }
 

@@ -8,7 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"strconv"
 	"time"
+	"time_speak_server/src/exception"
 	"time_speak_server/src/opts"
 	"time_speak_server/src/service/cache"
 )
@@ -37,7 +39,6 @@ func (s *Svc) AddUser(ctx context.Context, username, password, mail string) (pri
 	if err != nil {
 		return primitive.NilObjectID, err
 	}
-
 	user := User{
 		ObjectID:   primitive.NewObjectID(),
 		Username:   username,
@@ -45,7 +46,15 @@ func (s *Svc) AddUser(ctx context.Context, username, password, mail string) (pri
 		Mail:       mail,
 		CreateTime: time.Now().Unix(),
 	}
-
+	count, err := s.GetUserCount(ctx)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+	if count == 0 {
+		// 默认设置第一个用户为管理员
+		user.Permission = 1
+	}
+	s.redis.Set(ctx, "UserCount", count+1, time.Minute*time.Duration(10))
 	_, err = s.m.InsertOne(ctx, user)
 	return user.ObjectID, err
 }
@@ -68,9 +77,25 @@ func (s *Svc) GetUser(ctx context.Context, id primitive.ObjectID) (u User, err e
 	return
 }
 
-// GetUserByUsername 通过用户名获取用户
-func (s *Svc) GetUserByUsername(ctx context.Context, username string) (u User, err error) {
-	err = s.m.FindOne(ctx, bson.M{"username": username}).Decode(&u)
+// GetUserCount 获取用户数量
+func (s *Svc) GetUserCount(ctx context.Context) (c int64, err error) {
+	f := func() ([]byte, error) {
+		c, err = s.m.CountDocuments(ctx, bson.M{})
+		if err != nil {
+			return nil, err
+		}
+		return []byte(fmt.Sprintf("%d", c)), nil
+	}
+	// Redis缓存
+	result, err := s.c.Get(ctx, "UserCount", time.Minute*time.Duration(10), f)
+	if err != nil {
+		return
+	}
+	count, err := strconv.Atoi(string(result))
+	if err != nil {
+		return
+	}
+	c = int64(count)
 	return
 }
 
@@ -97,22 +122,22 @@ func (s *Svc) getUser(ctx context.Context, id primitive.ObjectID) (u User, err e
 	return
 }
 
-// CheckPasswordByUsername 检查用户名与密码是否匹配
-func (s *Svc) CheckPasswordByUsername(ctx context.Context, username, password string) (bool, error) {
-	u, err := s.GetUserByUsername(ctx, username)
+// CheckPasswordByMail 检查邮箱与密码是否匹配
+func (s *Svc) CheckPasswordByMail(ctx context.Context, mail, password string) (bool, error) {
+	u, err := s.GetUserByMail(ctx, mail)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return false, nil
+			return false, exception.ErrMailNotFound
 		}
 		return false, err
 	}
 	return ComparePassword(u.Password, password)
 }
 
-// GetTokenByUsername 生成Token
-func (s *Svc) GetTokenByUsername(ctx context.Context, username string) (jwt JWTClaims, token string, err error) {
+// GetTokenByMail 生成Token
+func (s *Svc) GetTokenByMail(ctx context.Context, mail string) (jwt JWTClaims, token string, err error) {
 	var u User
-	u, err = s.GetUserByUsername(ctx, username)
+	u, err = s.GetUserByMail(ctx, mail)
 	if err != nil {
 		return
 	}
@@ -126,23 +151,11 @@ func (s *Svc) GetTokenByUsername(ctx context.Context, username string) (jwt JWTC
 	if err != nil {
 		return
 	}
-	_, _ = s.m.UpdateOne(ctx, bson.M{"username": username}, bson.M{"$set": bson.M{"login_time": time.Now().Unix()}})
+	_, _ = s.m.UpdateOne(ctx, bson.M{"mail": mail}, bson.M{"$set": bson.M{"login_time": time.Now().Unix()}})
 	return
 }
 
 // ParseToken 解析Token
 func (s *Svc) ParseToken(token string) (*JWTClaims, error) {
 	return ParseJWTToken(token, s.TokenSecret)
-}
-
-// UpdateUserPassword 更新用户密码
-func (s *Svc) UpdateUserPassword(ctx context.Context, username string, password string) error {
-	p, err := EncryptPassword(password)
-	if err != nil {
-		return err
-	}
-	_, err = s.m.UpdateOne(ctx, bson.M{"username": username},
-		bson.M{"$set": bson.M{"password": p, "password_change_time": time.Now().Unix()}})
-	// 这里不需要处理缓存，因为登录也是用username获取用户的，缓存只做了通过id获取
-	return err
 }

@@ -1248,7 +1248,7 @@ input ForgetInput {
 }
 
 input LoginInput {
-    username: String!
+    mail: String!
     password: String!
 }
 
@@ -10173,18 +10173,18 @@ func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj in
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"username", "password"}
+	fieldsInOrder := [...]string{"mail", "password"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "username":
+		case "mail":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mail"))
+			it.Mail, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
