@@ -4,3 +4,6 @@
 /test/
 /src/config/logs/
 /logs/
+
+node_modules
+
