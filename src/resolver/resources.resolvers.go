@@ -43,14 +43,31 @@ func (r *mutationResolver) GetToken(ctx context.Context, fileName string) (*util
 	if !ok {
 		return nil, exception.ErrInvalidFileName
 	}
+	id, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// 检查容量限制
+	u, err := r.userSvc.GetUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	used, err := r.User().Used(ctx, &u)
+	if err != nil {
+		return nil, err
+	}
+	subscribe, err := r.User().Subscribe(ctx, &u)
+	if err != nil {
+		return nil, err
+	}
+	if used > subscribe.Capacity {
+		return nil, exception.ErrResourceSizeLimit
+	}
 	token, err := r.storageSvc.GetToken(ctx, newFileName)
 	if err != nil {
 		return nil, err
 	}
 	res, err := r.resourceSvc.NewResource(ctx, newFileName, 0)
-	if err != nil {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}

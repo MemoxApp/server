@@ -44,7 +44,7 @@ Input
 ```json
 {
   "input": {
-    "username": "<用户名>",
+    "mail": "<邮箱>",
     "password": "<密码>"
   }
 }
@@ -89,7 +89,7 @@ Input
 {
   "input": {
     "mail": "mail@example.com",
-    "register": false
+    "register": true
   }
 }
 ```
@@ -698,13 +698,14 @@ Query
 
 ```graphql
 mutation {
-    # 文件名格式必须为 <16位或32位16进制字符串>(.png/.jpg/.jpeg/.gif/.webp或无后缀)
+    # 文件名格式(.png/.jpg/.jpeg/.gif/.webp)
     # 推荐使用 32位 md5 散列值充当文件名
     getToken(fileName:"1234567890abcdef.png"){
         access_key
         secret_access_key
         session_token
         user_id
+        file_name
     }
     # 本地存储时仅需 session_token ，百度云对象存储需要使用到所有四个字段
 }

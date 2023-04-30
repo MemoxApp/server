@@ -18,7 +18,7 @@ type Svc struct {
 	Config
 	redis    *redis.Client
 	template string
-	client   *mail.SMTPClient
+	server   *mail.SMTPServer
 }
 
 func NewMailSvc(conf Config, redis *redis.Client) *Svc {
@@ -38,14 +38,12 @@ func NewMailSvc(conf Config, redis *redis.Client) *Svc {
 	server.Password = s.SmtpMailPwd
 	server.Encryption = mail.EncryptionSSLTLS
 	// Variable to keep alive connection
-	server.KeepAlive = true
+	server.KeepAlive = false
 	// Timeout for connect to SMTP Server
 	server.ConnectTimeout = 10 * time.Second
 	// Timeout for send the data and wait respond
 	server.SendTimeout = 10 * time.Second
 	server.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-
-	smtpClient, err := server.Connect()
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -55,7 +53,7 @@ func NewMailSvc(conf Config, redis *redis.Client) *Svc {
 		Config:   conf,
 		redis:    redis,
 		template: string(template),
-		client:   smtpClient,
+		server:   server,
 	}
 }
 
@@ -70,6 +68,10 @@ func (s *Svc) NewEmailVerifyCode(ctx context.Context, email, act string) error {
 	}
 
 	code := newCode(email, act, s.CodeLength)
+	err = s.sendVerifyCode(email, code.Act, code.Code)
+	if err != nil {
+		return err
+	}
 	jsonStr, err := json.Marshal(code)
 	if err != nil {
 		return err
@@ -83,7 +85,7 @@ func (s *Svc) NewEmailVerifyCode(ctx context.Context, email, act string) error {
 		return err
 	}
 
-	return s.sendVerifyCode(email, code.Act, code.Code)
+	return nil
 }
 
 func (s *Svc) sendMail(address string, subject, body string) (err error) {
@@ -92,7 +94,8 @@ func (s *Svc) sendMail(address string, subject, body string) (err error) {
 		AddTo(address).
 		SetSubject(subject)
 	email.SetBody(mail.TextHTML, body)
-	err = email.Send(s.client)
+	smtpClient, err := s.server.Connect()
+	err = email.Send(smtpClient)
 	if err != nil {
 		return err
 	}

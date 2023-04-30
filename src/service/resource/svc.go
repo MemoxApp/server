@@ -57,6 +57,10 @@ func (s *Svc) CheckResourceExist(ctx context.Context, path string) (*Resource, e
 
 // NewResource 创建资源
 func (s *Svc) NewResource(ctx context.Context, path string, size int64) (string, error) {
+	id, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return "", err
+	}
 	exist, err := s.CheckResourceExist(ctx, path)
 	if err != nil {
 		return "", err
@@ -68,10 +72,6 @@ func (s *Svc) NewResource(ctx context.Context, path string, size int64) (string,
 			// 创建了但未使用的资源
 			return exist.ObjectID.Hex(), nil
 		}
-	}
-	id, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return "", err
 	}
 	resource := Resource{
 		ObjectID:   primitive.NewObjectID(),
@@ -129,16 +129,46 @@ func (s *Svc) UpdateResourceReferences(ctx context.Context, ref, memoryID string
 }
 
 // UpdateResourceSize 插入或更新资源
-func (s *Svc) UpdateResourceSize(ctx context.Context, fileName string, size int64) (string, error) {
-	res, err := s.GetResourceByPath(ctx, fileName)
+func UpdateResourceSize(m *mongo.Collection, ctx context.Context, fileName string, size int64) (string, error) {
+	res, err := GetResourceByPath(m, ctx, fileName)
 	if err != nil {
 		return "", err
 	}
-	err = s.UpdateResource(ctx, res.ObjectID, opts.With("size", size))
+	err = UpdateResource(m, ctx, res.ObjectID, opts.With("size", size))
 	if err != nil {
 		return "", err
 	}
 	return res.ObjectID.Hex(), nil
+}
+
+// GetResourceByPath 通过路径获取资源
+func GetResourceByPath(m *mongo.Collection, ctx context.Context, path string) (*Resource, error) {
+	split := strings.Split(path, "/")
+	if len(split) < 3 {
+		return nil, exception.ErrInvalidPath
+	}
+	userId := split[1]
+	uid, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, exception.ErrInvalidID
+	}
+	fileName := split[2]
+	var resource Resource
+	err = m.FindOne(ctx, bson.M{"uid": uid, "path": fileName}).Decode(&resource) // 只能获取自己的资源
+	if err != nil {
+		return nil, err
+	}
+	return &resource, nil
+}
+
+// UpdateResource 更新资源
+func UpdateResource(m *mongo.Collection, ctx context.Context, id primitive.ObjectID, opts ...opts.Option) error {
+	toUpdate := bson.M{"update_time": time.Now().Unix()}
+	for _, f := range opts {
+		toUpdate = f(toUpdate)
+	}
+	_, err := m.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": toUpdate})
+	return err
 }
 
 func (s *Svc) UpdateReferences(ctx context.Context, oldContent, newContent string, memoryID string) error {
@@ -232,20 +262,6 @@ func (s *Svc) GetResource(ctx context.Context, id primitive.ObjectID) (*Resource
 	return &resource, nil
 }
 
-// GetResourceByPath 通过路径获取资源
-func (s *Svc) GetResourceByPath(ctx context.Context, path string) (*Resource, error) {
-	uid, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var resource Resource
-	err = s.m.FindOne(ctx, bson.M{"uid": uid, "path": path}).Decode(&resource) // 只能获取自己的资源
-	if err != nil {
-		return nil, err
-	}
-	return &resource, nil
-}
-
 // GetResourceUsed 获取资源使用情况
 func (s *Svc) GetResourceUsed(ctx context.Context, uid primitive.ObjectID) (int64, error) {
 	var resource []*Resource
@@ -327,6 +343,6 @@ func (s *Svc) LocalUpload(ctx context.Context, session string, upload graphql.Up
 		return "", err
 	}
 	println("fileName:" + l)
-	id, err := s.UpdateResourceSize(ctx, l, size)
+	id, err := UpdateResourceSize(s.m, ctx, l, size)
 	return id, err
 }

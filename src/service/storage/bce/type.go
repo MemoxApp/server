@@ -4,7 +4,7 @@ import "time"
 
 // CallbackRequest 百度云回调
 type CallbackRequest struct {
-	Events CallbackEvents `json:"events"`
+	Events []CallbackEvents `json:"events"`
 }
 
 type CallbackEvents struct {

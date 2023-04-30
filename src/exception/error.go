@@ -38,6 +38,8 @@ var (
 	ErrResourceHasReference   = GqlError("资源被引用，无法删除", "RESOURCE_HAS_REFERENCE")
 	ErrSubscribeNotEmpty      = GqlError("订阅下存在用户，无法删除", "SUBSCRIBE_NOT_EMPTY")
 	ErrSubscribeNotExist      = GqlError("订阅不存在", "SUBSCRIBE_NOT_EXIST")
+	ErrInvalidPath            = GqlError("不合法的路径", "INVALID_PATH")
+	ErrResourceSizeLimit      = GqlError("资源使用量已达限额", "RESOURCE_SIZE_LIMIT")
 )
 
 func InternalError(err error) error {

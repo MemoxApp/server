@@ -112,7 +112,7 @@ func (r *mutationResolver) SendEmailCode(ctx context.Context, input generated.Se
 		if err == mail.ErrVerifyCodeCoolDown {
 			return false, exception.ErrTooManyRequest
 		} else {
-			return false, exception.InternalError(err)
+			return false, err
 		}
 	}
 	return true, nil
