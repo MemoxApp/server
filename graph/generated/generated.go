@@ -183,6 +183,7 @@ type ComplexityRoot struct {
 
 	UploadTokenPayload struct {
 		AccessKey       func(childComplexity int) int
+		FileName        func(childComplexity int) int
 		ID              func(childComplexity int) int
 		SecretAccessKey func(childComplexity int) int
 		SessionToken    func(childComplexity int) int
@@ -1051,6 +1052,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UploadTokenPayload.AccessKey(childComplexity), true
 
+	case "UploadTokenPayload.file_name":
+		if e.complexity.UploadTokenPayload.FileName == nil {
+			break
+		}
+
+		return e.complexity.UploadTokenPayload.FileName(childComplexity), true
+
 	case "UploadTokenPayload.id":
 		if e.complexity.UploadTokenPayload.ID == nil {
 			break
@@ -1504,6 +1512,8 @@ type UploadTokenPayload {
     session_token: String!
     "UserId"
     user_id    : String!
+    "文件名"
+    file_name    : String!
 }
 
 input LocalUploadInput{
@@ -4944,6 +4954,8 @@ func (ec *executionContext) fieldContext_Mutation_getToken(ctx context.Context, 
 				return ec.fieldContext_UploadTokenPayload_session_token(ctx, field)
 			case "user_id":
 				return ec.fieldContext_UploadTokenPayload_user_id(ctx, field)
+			case "file_name":
+				return ec.fieldContext_UploadTokenPayload_file_name(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UploadTokenPayload", field.Name)
 		},
@@ -7653,6 +7665,50 @@ func (ec *executionContext) _UploadTokenPayload_user_id(ctx context.Context, fie
 }
 
 func (ec *executionContext) fieldContext_UploadTokenPayload_user_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadTokenPayload_file_name(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_file_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FileName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadTokenPayload_file_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UploadTokenPayload",
 		Field:      field,
@@ -11862,6 +11918,13 @@ func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.Sel
 		case "user_id":
 
 			out.Values[i] = ec._UploadTokenPayload_user_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "file_name":
+
+			out.Values[i] = ec._UploadTokenPayload_file_name(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++

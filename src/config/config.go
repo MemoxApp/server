@@ -23,7 +23,6 @@ const (
 )
 
 type Config struct {
-	App       app              `yaml:"app"`
 	DB        db               `yaml:"db"`
 	Debug     bool             `yaml:"debug"`
 	User      user.Config      `yaml:"user"`
@@ -35,11 +34,6 @@ type Config struct {
 	Subscribe subscribe.Config `yaml:"subscribe"`
 	Resource  resource.Config  `yaml:"resource"`
 	Storage   storage.Config   `yaml:"storage"`
-}
-
-type app struct {
-	Addr string `yaml:"addr"`
-	Host string `yaml:"host"`
 }
 
 type db struct {

@@ -31,17 +31,14 @@ func NewLocalSvc(config Config, r *redis.Client) *Local {
 }
 
 func (b *Local) GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error) {
-	userId, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return nil, err
-	}
 	randStr := GenerateRandomString(32)
 	b.r.Set(ctx, "Local-"+randStr, fileName, time.Minute)
 	return &utils.UploadTokenPayload{
 		AccessKey:       "",
 		SecretAccessKey: "",
 		SessionToken:    randStr,
-		UserID:          userId.Hex(),
+		UserID:          "",
+		FileName:        fileName,
 	}, nil
 }
 

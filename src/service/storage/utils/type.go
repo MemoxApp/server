@@ -24,4 +24,6 @@ type UploadTokenPayload struct {
 	SessionToken string `json:"session_token"`
 	// UserId
 	UserID string `json:"user_id"`
+	// 文件名
+	FileName string `json:"file_name"`
 }

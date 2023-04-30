@@ -6,4 +6,6 @@ type Config struct {
 	EndPoint        string `yaml:"end_point"`
 	BucketName      string `yaml:"bucket_name"`
 	Region          string `yaml:"region"`
+	CDN             bool   `yaml:"cdn"`
+	CdnAuthKey      string `yaml:"cdn_auth_key"`
 }

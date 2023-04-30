@@ -51,7 +51,7 @@ func (s *Svc) NewSubscribe(ctx context.Context, name string, capacity int64, ena
 		return "", err
 	}
 	if exist {
-		return "", exception.ErrContentExist
+		return "", exception.ErrSubscribeExist
 	}
 	subscribe := Subscribe{
 		ObjectID:   primitive.NewObjectID(),
@@ -98,6 +98,9 @@ func (s *Svc) GetSubscribe(ctx context.Context, id primitive.ObjectID) (*Subscri
 	}
 	err := s.m.FindOne(ctx, bson.M{"_id": id}).Decode(&subscribe)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, exception.ErrSubscribeNotExist
+		}
 		return nil, err
 	}
 	return &subscribe, nil

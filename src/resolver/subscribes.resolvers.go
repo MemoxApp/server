@@ -32,12 +32,20 @@ func (r *mutationResolver) UpdateSubscribe(ctx context.Context, input generated.
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	// 检查是否存在
+	_, err = r.subscribeSvc.GetSubscribe(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	var toUpdate []opts.Option
 	if input.Name != nil && len(*input.Name) > 0 {
 		toUpdate = append(toUpdate, opts.WithString("name", *input.Name))
 	}
 	if input.Enable != nil {
-		toUpdate = append(toUpdate, opts.WithArchived(*input.Enable))
+		toUpdate = append(toUpdate, opts.With("enabled", *input.Enable))
+	}
+	if input.Capacity != nil {
+		toUpdate = append(toUpdate, opts.With("capacity", *input.Capacity))
 	}
 	if len(toUpdate) == 0 {
 		return true, nil
@@ -51,6 +59,19 @@ func (r *mutationResolver) DeleteSubscribe(ctx context.Context, input string) (b
 	id, err := primitive.ObjectIDFromHex(input)
 	if err != nil {
 		return false, exception.ErrInvalidID
+	}
+	// 检查是否存在
+	_, err = r.subscribeSvc.GetSubscribe(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	// 检查是否有用户
+	countBySubscribe, err := r.userSvc.GetUserCountBySubscribe(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if countBySubscribe > 0 {
+		return false, exception.ErrSubscribeNotEmpty
 	}
 	err = r.subscribeSvc.DeleteSubscribe(ctx, id)
 	return true, nil

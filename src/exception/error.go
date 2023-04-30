@@ -36,7 +36,8 @@ var (
 	ErrHashTagHasMemories     = GqlError("话题下存在记忆，无法删除", "HASH_TAG_HAS_MEMORIES")
 	ErrMemoryNotArchived      = GqlError("记忆未归档，无法删除", "MEMORY_NOT_ARCHIVED")
 	ErrResourceHasReference   = GqlError("资源被引用，无法删除", "RESOURCE_HAS_REFERENCE")
-	ErrCommentArchived        = GqlError("回复已归档，无法评论", "COMMENT_ARCHIVED")
+	ErrSubscribeNotEmpty      = GqlError("订阅下存在用户，无法删除", "SUBSCRIBE_NOT_EMPTY")
+	ErrSubscribeNotExist      = GqlError("订阅不存在", "SUBSCRIBE_NOT_EXIST")
 )
 
 func InternalError(err error) error {

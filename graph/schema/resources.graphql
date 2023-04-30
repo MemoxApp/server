@@ -42,6 +42,8 @@ type UploadTokenPayload {
     session_token: String!
     "UserId"
     user_id    : String!
+    "文件名"
+    file_name    : String!
 }
 
 input LocalUploadInput{

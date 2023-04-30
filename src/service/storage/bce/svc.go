@@ -2,7 +2,6 @@ package bce
 
 import (
 	"context"
-	"fmt"
 	"github.com/baidubce/bce-sdk-go/services/bos"
 	"github.com/baidubce/bce-sdk-go/services/sts"
 	"time_speak_server/src/service/storage/utils"
@@ -19,19 +18,6 @@ type BCE struct {
 func NewBCESvc(config Config) *BCE {
 	// 创建BOS服务的Client
 	bosClient, err := bos.NewClient(config.AccessKeyID, config.SecretAccessKey, config.EndPoint)
-	exist, err := bosClient.DoesBucketExist(config.BucketName)
-	if err != nil {
-		panic(err)
-	}
-	if !exist {
-		// 创建Bucket
-		location, err := bosClient.PutBucket(config.BucketName)
-		if err != nil {
-			fmt.Println("创建存储桶失败", err)
-			panic(err)
-		}
-		fmt.Println("成功创建存储桶，路径：", location)
-	}
 	client, err := sts.NewClient(config.AccessKeyID, config.SecretAccessKey)
 	if err != nil {
 		return nil
@@ -50,6 +36,7 @@ func (b *BCE) GetToken(ctx context.Context, fileName string) (*utils.UploadToken
 	}
 	// 生成上传凭证
 	aclString := b.getWritePermissionACL(userId.Hex(), fileName)
+	absPath := utils.GenerateResourcePath(userId.Hex(), fileName)
 	sessionToken, err := b.Sts.GetSessionToken(60, aclString)
 	if err != nil {
 		return nil, err
@@ -59,6 +46,7 @@ func (b *BCE) GetToken(ctx context.Context, fileName string) (*utils.UploadToken
 		SecretAccessKey: sessionToken.SecretAccessKey,
 		SessionToken:    sessionToken.SessionToken,
 		UserID:          sessionToken.UserId,
+		FileName:        absPath,
 	}, nil
 }
 
@@ -68,9 +56,15 @@ func (b *BCE) GetUrl(ctx context.Context, path string) (string, error) {
 		return "", err
 	}
 	p := utils.GenerateResourcePath(userId.Hex(), path)
-	// 生成下载地址,有效时间 30 min
-	url := b.Bos.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
-	return url, nil
+	if b.Config.CDN {
+		// 生成CDN下载地址,有效时间在CDN控制台配置
+		u := SignUrl(b.Config.EndPoint, p, b.Config.CdnAuthKey)
+		return u, nil
+	} else {
+		// 生成对象存储下载地址,有效时间 30 min
+		u := b.Bos.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
+		return u, nil
+	}
 }
 
 func (b *BCE) Delete(ctx context.Context, path string) (bool, error) {

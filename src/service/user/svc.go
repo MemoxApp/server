@@ -99,6 +99,12 @@ func (s *Svc) GetUserCount(ctx context.Context) (c int64, err error) {
 	return
 }
 
+// GetUserCountBySubscribe 获取指定订阅的用户数量
+func (s *Svc) GetUserCountBySubscribe(ctx context.Context, id primitive.ObjectID) (c int64, err error) {
+	c, err = s.m.CountDocuments(ctx, bson.M{"subscribe": id})
+	return
+}
+
 // GetUserByMail 通过邮箱获取用户
 func (s *Svc) GetUserByMail(ctx context.Context, mail string) (u User, err error) {
 	err = s.m.FindOne(ctx, bson.M{"mail": mail}).Decode(&u)
