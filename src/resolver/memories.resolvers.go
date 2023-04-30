@@ -139,7 +139,21 @@ func (r *mutationResolver) DeleteMemory(ctx context.Context, input string) (bool
 		return false, exception.ErrMemoryNotArchived
 	}
 	err = r.memorySvc.DeleteMemory(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	err = r.resourceSvc.UpdateReferences(ctx, oldMemory.Content, "", input)
+	if err != nil {
+		return false, err
+	}
+	err = r.commentSvc.DeleteCommentByMemoryID(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	err = r.historySvc.DeleteHistoryByMemoryID(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	if err != nil {
 		return false, err
 	}

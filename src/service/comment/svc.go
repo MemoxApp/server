@@ -116,6 +116,39 @@ func (s *Svc) DeleteComment(ctx context.Context, id primitive.ObjectID) error {
 	return err
 }
 
+// DeleteCommentByParentID 通过父级ID删除回复
+func (s *Svc) DeleteCommentByParentID(ctx context.Context, parentID primitive.ObjectID) error {
+	result, err := s.m.DeleteMany(ctx, bson.M{"parent_id": parentID})
+	if result.DeletedCount == 0 {
+		return exception.ErrCommentNotFound
+	}
+	return err
+}
+
+// DeleteCommentByMemoryID 通过记忆ID删除回复
+func (s *Svc) DeleteCommentByMemoryID(ctx context.Context, memoryID primitive.ObjectID) error {
+	// 查找所有的 Top-Level 回复
+	var comments []Comment
+	cursor, err := s.m.Find(ctx, bson.M{"parent_id": memoryID})
+	if err != nil {
+		return err
+	}
+	err = cursor.All(ctx, &comments)
+	if err != nil {
+		return err
+	}
+	// 删除 Top-Level 的所有子回复
+	for _, comment := range comments {
+		_, err = s.m.DeleteMany(ctx, bson.M{"parent_id": comment.ObjectID})
+		if err != nil {
+			return err
+		}
+	}
+	// 删除所有的 Top-Level 回复
+	_, err = s.m.DeleteMany(ctx, bson.M{"parent_id": memoryID})
+	return err
+}
+
 // GetComment 获取回复
 func (s *Svc) GetComment(ctx context.Context, id primitive.ObjectID) (*Comment, error) {
 	uid, err := user.GetUserFromJwt(ctx)

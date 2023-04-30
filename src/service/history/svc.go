@@ -45,6 +45,12 @@ func (s *Svc) NewHistory(ctx context.Context, oldMemory *memory.Memory) (string,
 	return history.ObjectID.Hex(), err
 }
 
+// DeleteHistoryByMemoryID 根据memoryID删除历史
+func (s *Svc) DeleteHistoryByMemoryID(ctx context.Context, memoryID primitive.ObjectID) error {
+	_, err := s.m.DeleteMany(ctx, bson.M{"memory_id": memoryID})
+	return err
+}
+
 func (s *Svc) GetHistories(ctx context.Context, memoryID string, page, size int64, desc bool) ([]*History, error) {
 	order := 1
 	if desc {

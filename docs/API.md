@@ -1,19 +1,26 @@
 # API 文档
 
-## 已知问题
+# 接口信息
 
-Memory 删除时Comments及其子回复未删除（有必要删除）  
-Memory 删除时历史记录未删除（有必要删除）  
-Memory 更新后存在历史记录对资源的引用(忽略)
-
-## 待测试接口
+### Endpoint
 
 ```
-其他
-其他用户内容可见性测试
+[POST] https://ts.runs.fun/query
 ```
 
-以下接口为已经过测试的接口，可查看GraphQL Schema文件夹 [graph/schema](../graph/schema) 查看全部接口
+### 在线调试
+
+仅在 Debug 模式下可用
+
+```
+https://ts.runs.fun/play
+```
+
+### 百度云事件通知地址
+
+```
+https://ts.runs.fun/notify/bce
+```
 
 ## Account
 
