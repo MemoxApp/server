@@ -1,7 +1,7 @@
 db: # 数据库配置
-  mongo_addr: "localhost:27017" # MongoDB 数据库地址
+  mongo_addr: "mongo:27017" # MongoDB 数据库地址
   mongo_db: "timespeak" # MongoDB 数据库名称
-  redis_addr: "localhost:6379" # Redis 地址
+  redis_addr: "redis:6379" # Redis 地址
   redis_db: 0 # Redis 数据库编号
 debug: true # 调试模式
 user: # 用户配置

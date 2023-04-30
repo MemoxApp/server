@@ -9,8 +9,9 @@ services:
       - "8080:8080"
     environment:
       - TZ=Asia/Shanghai
-      - CONFIG_FILE=env/dev.yaml
+      - CONFIG_FILE=/app/env/example.yaml
     volumes:
+      - ./env:/app/env
       - ./data/storage:/app/data/storage
       - /etc/localtime:/etc/localtime:ro
     depends_on:
@@ -28,14 +29,14 @@ services:
       - MONGO_INITDB_DATABASE=timespeak
     container_name: timespeak_dev_mongo
     restart: always
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     networks:
       - timespeak
   redis:
     image: redis:6.2.5
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     environment:
       - TZ=Asia/Shanghai
     container_name: timespeak_dev_redis
