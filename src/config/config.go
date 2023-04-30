@@ -20,7 +20,7 @@ type ContextKey string
 const (
 	VersionName = "1.0"
 	VersionCode = 1
-	Build       = 2304301858
+	Build       = 230430
 )
 
 type Config struct {
