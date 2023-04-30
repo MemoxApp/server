@@ -6,9 +6,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"memox_server/src/config"
+	"memox_server/src/log"
 	"time"
-	"time_speak_server/src/config"
-	"time_speak_server/src/log"
 )
 
 func InitDB(conf config.Config) (db *mongo.Database, r *redis.Client, err error) {

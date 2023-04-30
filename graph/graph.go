@@ -10,11 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
+	"memox_server/graph/generated"
+	"memox_server/src/config"
+	"memox_server/src/resolver"
+	"memox_server/src/service/user"
 	"time"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/config"
-	"time_speak_server/src/resolver"
-	"time_speak_server/src/service/user"
 )
 
 func GraphqlHandler(conf config.Config, db *mongo.Database, redis *redis.Client) gin.HandlerFunc {

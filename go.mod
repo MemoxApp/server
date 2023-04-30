@@ -1,4 +1,4 @@
-module time_speak_server
+module memox_server
 
 go 1.19
 

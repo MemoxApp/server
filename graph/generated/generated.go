@@ -7,17 +7,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"memox_server/src/service/comment"
+	"memox_server/src/service/hashtag"
+	"memox_server/src/service/history"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/resource"
+	"memox_server/src/service/storage/utils"
+	"memox_server/src/service/subscribe"
+	"memox_server/src/service/user"
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"time_speak_server/src/service/comment"
-	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/history"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/resource"
-	"time_speak_server/src/service/storage/utils"
-	"time_speak_server/src/service/subscribe"
-	"time_speak_server/src/service/user"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -1655,7 +1655,7 @@ func (ec *executionContext) field_Mutation_addComment_args(ctx context.Context, 
 	var arg0 AddCommentInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAddCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNAddCommentInput2memox_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1670,7 +1670,7 @@ func (ec *executionContext) field_Mutation_addMemory_args(ctx context.Context, r
 	var arg0 AddMemoryInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAddMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx, tmp)
+		arg0, err = ec.unmarshalNAddMemoryInput2memox_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1685,7 +1685,7 @@ func (ec *executionContext) field_Mutation_addSubscribe_args(ctx context.Context
 	var arg0 AddSubscribeInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNAddSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx, tmp)
+		arg0, err = ec.unmarshalNAddSubscribeInput2memox_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1799,7 +1799,7 @@ func (ec *executionContext) field_Mutation_forget_args(ctx context.Context, rawA
 	var arg0 ForgetInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNForgetInput2time_speak_serverᚋgraphᚋgeneratedᚐForgetInput(ctx, tmp)
+		arg0, err = ec.unmarshalNForgetInput2memox_serverᚋgraphᚋgeneratedᚐForgetInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1829,7 +1829,7 @@ func (ec *executionContext) field_Mutation_localUpload_args(ctx context.Context,
 	var arg0 LocalUploadInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLocalUploadInput2time_speak_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx, tmp)
+		arg0, err = ec.unmarshalNLocalUploadInput2memox_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1844,7 +1844,7 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	var arg0 LoginInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLoginInput2time_speak_serverᚋgraphᚋgeneratedᚐLoginInput(ctx, tmp)
+		arg0, err = ec.unmarshalNLoginInput2memox_serverᚋgraphᚋgeneratedᚐLoginInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1859,7 +1859,7 @@ func (ec *executionContext) field_Mutation_register_args(ctx context.Context, ra
 	var arg0 RegisterInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRegisterInput2time_speak_serverᚋgraphᚋgeneratedᚐRegisterInput(ctx, tmp)
+		arg0, err = ec.unmarshalNRegisterInput2memox_serverᚋgraphᚋgeneratedᚐRegisterInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1874,7 +1874,7 @@ func (ec *executionContext) field_Mutation_sendEmailCode_args(ctx context.Contex
 	var arg0 SendEmailCodeInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNSendEmailCodeInput2time_speak_serverᚋgraphᚋgeneratedᚐSendEmailCodeInput(ctx, tmp)
+		arg0, err = ec.unmarshalNSendEmailCodeInput2memox_serverᚋgraphᚋgeneratedᚐSendEmailCodeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1889,7 +1889,7 @@ func (ec *executionContext) field_Mutation_updateComment_args(ctx context.Contex
 	var arg0 UpdateCommentInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateCommentInput2memox_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1904,7 +1904,7 @@ func (ec *executionContext) field_Mutation_updateHashTag_args(ctx context.Contex
 	var arg0 HashTagInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNHashTagInput2time_speak_serverᚋgraphᚋgeneratedᚐHashTagInput(ctx, tmp)
+		arg0, err = ec.unmarshalNHashTagInput2memox_serverᚋgraphᚋgeneratedᚐHashTagInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1919,7 +1919,7 @@ func (ec *executionContext) field_Mutation_updateMemory_args(ctx context.Context
 	var arg0 UpdateMemoryInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateMemoryInput2memox_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1934,7 +1934,7 @@ func (ec *executionContext) field_Mutation_updateSubscribe_args(ctx context.Cont
 	var arg0 UpdateSubscribeInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateSubscribeInput2memox_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2006,7 +2006,7 @@ func (ec *executionContext) field_Query_allHashTags_args(ctx context.Context, ra
 	var arg0 ListInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
+		arg0, err = ec.unmarshalNListInput2memox_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2072,7 +2072,7 @@ func (ec *executionContext) field_Query_allMemoriesByTag_args(ctx context.Contex
 	var arg1 ListInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg1, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
+		arg1, err = ec.unmarshalNListInput2memox_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2087,7 +2087,7 @@ func (ec *executionContext) field_Query_allMemories_args(ctx context.Context, ra
 	var arg0 ListInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
+		arg0, err = ec.unmarshalNListInput2memox_serverᚋgraphᚋgeneratedᚐListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2305,7 +2305,7 @@ func (ec *executionContext) _Comment_memory(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_memory(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2367,7 +2367,7 @@ func (ec *executionContext) _Comment_user(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2475,7 +2475,7 @@ func (ec *executionContext) _Comment_subComments(ctx context.Context, field grap
 	}
 	res := resTmp.([]*comment.Comment)
 	fc.Result = res
-	return ec.marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+	return ec.marshalNSubComment2ᚕᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_subComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2537,7 +2537,7 @@ func (ec *executionContext) _Comment_hashtags(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*hashtag.HashTag)
 	fc.Result = res
-	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+	return ec.marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2771,7 +2771,7 @@ func (ec *executionContext) _HashTag_user(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_HashTag_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3055,7 +3055,7 @@ func (ec *executionContext) _History_memory(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_History_memory(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3117,7 +3117,7 @@ func (ec *executionContext) _History_user(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_History_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3269,7 +3269,7 @@ func (ec *executionContext) _History_hashtags(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*hashtag.HashTag)
 	fc.Result = res
-	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+	return ec.marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_History_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3591,7 +3591,7 @@ func (ec *executionContext) _Memory_user(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Memory_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3743,7 +3743,7 @@ func (ec *executionContext) _Memory_hashtags(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*hashtag.HashTag)
 	fc.Result = res
-	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+	return ec.marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Memory_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3933,7 +3933,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*LoginPayload)
 	fc.Result = res
-	return ec.marshalNLoginPayload2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx, field.Selections, res)
+	return ec.marshalNLoginPayload2ᚖmemox_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4919,7 +4919,7 @@ func (ec *executionContext) _Mutation_getToken(ctx context.Context, field graphq
 		if data, ok := tmp.(*utils.UploadTokenPayload); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time_speak_server/src/service/storage/utils.UploadTokenPayload`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *memox_server/src/service/storage/utils.UploadTokenPayload`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4933,7 +4933,7 @@ func (ec *executionContext) _Mutation_getToken(ctx context.Context, field graphq
 	}
 	res := resTmp.(*utils.UploadTokenPayload)
 	fc.Result = res
-	return ec.marshalNUploadTokenPayload2ᚖtime_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx, field.Selections, res)
+	return ec.marshalNUploadTokenPayload2ᚖmemox_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_getToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5308,7 +5308,7 @@ func (ec *executionContext) _Query_allComments(ctx context.Context, field graphq
 		if data, ok := tmp.([]*comment.Comment); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/comment.Comment`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/comment.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5322,7 +5322,7 @@ func (ec *executionContext) _Query_allComments(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*comment.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚕᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5403,7 +5403,7 @@ func (ec *executionContext) _Query_subComments(ctx context.Context, field graphq
 		if data, ok := tmp.([]*comment.Comment); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/comment.Comment`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/comment.Comment`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5417,7 +5417,7 @@ func (ec *executionContext) _Query_subComments(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*comment.Comment)
 	fc.Result = res
-	return ec.marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+	return ec.marshalNSubComment2ᚕᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_subComments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5496,7 +5496,7 @@ func (ec *executionContext) _Query_allHashTags(ctx context.Context, field graphq
 		if data, ok := tmp.([]*hashtag.HashTag); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/hashtag.HashTag`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/hashtag.HashTag`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5510,7 +5510,7 @@ func (ec *executionContext) _Query_allHashTags(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*hashtag.HashTag)
 	fc.Result = res
-	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+	return ec.marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allHashTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5585,7 +5585,7 @@ func (ec *executionContext) _Query_allHistories(ctx context.Context, field graph
 		if data, ok := tmp.([]*history.History); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/history.History`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/history.History`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5599,7 +5599,7 @@ func (ec *executionContext) _Query_allHistories(ctx context.Context, field graph
 	}
 	res := resTmp.([]*history.History)
 	fc.Result = res
-	return ec.marshalNHistory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx, field.Selections, res)
+	return ec.marshalNHistory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allHistories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5676,7 +5676,7 @@ func (ec *executionContext) _Query_allMemories(ctx context.Context, field graphq
 		if data, ok := tmp.([]*memory.Memory); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/memory.Memory`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/memory.Memory`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5690,7 +5690,7 @@ func (ec *executionContext) _Query_allMemories(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allMemories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5769,7 +5769,7 @@ func (ec *executionContext) _Query_allMemoriesByTag(ctx context.Context, field g
 		if data, ok := tmp.([]*memory.Memory); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/memory.Memory`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/memory.Memory`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5783,7 +5783,7 @@ func (ec *executionContext) _Query_allMemoriesByTag(ctx context.Context, field g
 	}
 	res := resTmp.([]*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allMemoriesByTag(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5862,7 +5862,7 @@ func (ec *executionContext) _Query_memory(ctx context.Context, field graphql.Col
 		if data, ok := tmp.(*memory.Memory); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time_speak_server/src/service/memory.Memory`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *memox_server/src/service/memory.Memory`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5876,7 +5876,7 @@ func (ec *executionContext) _Query_memory(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_memory(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5955,7 +5955,7 @@ func (ec *executionContext) _Query_allResources(ctx context.Context, field graph
 		if data, ok := tmp.([]*resource.Resource); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/resource.Resource`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/resource.Resource`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5969,7 +5969,7 @@ func (ec *executionContext) _Query_allResources(ctx context.Context, field graph
 	}
 	res := resTmp.([]*resource.Resource)
 	fc.Result = res
-	return ec.marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, field.Selections, res)
+	return ec.marshalNResource2ᚕᚖmemox_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allResources(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6038,7 +6038,7 @@ func (ec *executionContext) _Query_status(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*ServerStatus)
 	fc.Result = res
-	return ec.marshalNServerStatus2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx, field.Selections, res)
+	return ec.marshalNServerStatus2ᚖmemox_serverᚋgraphᚋgeneratedᚐServerStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6096,7 +6096,7 @@ func (ec *executionContext) _Query_allSubscribes(ctx context.Context, field grap
 		if data, ok := tmp.([]*subscribe.Subscribe); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*time_speak_server/src/service/subscribe.Subscribe`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*memox_server/src/service/subscribe.Subscribe`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6110,7 +6110,7 @@ func (ec *executionContext) _Query_allSubscribes(ctx context.Context, field grap
 	}
 	res := resTmp.([]*subscribe.Subscribe)
 	fc.Result = res
-	return ec.marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
+	return ec.marshalNSubscribe2ᚕᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allSubscribes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6174,7 +6174,7 @@ func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphq
 		if data, ok := tmp.(*user.User); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time_speak_server/src/service/user.User`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *memox_server/src/service/user.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6188,7 +6188,7 @@ func (ec *executionContext) _Query_currentUser(ctx context.Context, field graphq
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_currentUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6469,7 +6469,7 @@ func (ec *executionContext) _Resource_user(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Resource_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6577,7 +6577,7 @@ func (ec *executionContext) _Resource_memories(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*memory.Memory)
 	fc.Result = res
-	return ec.marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
+	return ec.marshalNMemory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Resource_memories(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6859,7 +6859,7 @@ func (ec *executionContext) _SubComment_comment(ctx context.Context, field graph
 	}
 	res := resTmp.(*comment.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SubComment_comment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6923,7 +6923,7 @@ func (ec *executionContext) _SubComment_user(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*user.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SubComment_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7075,7 +7075,7 @@ func (ec *executionContext) _SubComment_hashtags(ctx context.Context, field grap
 	}
 	res := resTmp.([]*hashtag.HashTag)
 	fc.Result = res
-	return ec.marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
+	return ec.marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SubComment_hashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8101,7 +8101,7 @@ func (ec *executionContext) _User_subscribe(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*subscribe.Subscribe)
 	fc.Result = res
-	return ec.marshalNSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
+	return ec.marshalNSubscribe2ᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_subscribe(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12368,17 +12368,17 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) unmarshalNAddCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx context.Context, v interface{}) (AddCommentInput, error) {
+func (ec *executionContext) unmarshalNAddCommentInput2memox_serverᚋgraphᚋgeneratedᚐAddCommentInput(ctx context.Context, v interface{}) (AddCommentInput, error) {
 	res, err := ec.unmarshalInputAddCommentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNAddMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx context.Context, v interface{}) (AddMemoryInput, error) {
+func (ec *executionContext) unmarshalNAddMemoryInput2memox_serverᚋgraphᚋgeneratedᚐAddMemoryInput(ctx context.Context, v interface{}) (AddMemoryInput, error) {
 	res, err := ec.unmarshalInputAddMemoryInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNAddSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx context.Context, v interface{}) (AddSubscribeInput, error) {
+func (ec *executionContext) unmarshalNAddSubscribeInput2memox_serverᚋgraphᚋgeneratedᚐAddSubscribeInput(ctx context.Context, v interface{}) (AddSubscribeInput, error) {
 	res, err := ec.unmarshalInputAddSubscribeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -12398,11 +12398,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNComment2time_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2memox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v comment.Comment) graphql.Marshaler {
 	return ec._Comment(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2ᚕᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12426,7 +12426,7 @@ func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserv
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
+			ret[i] = ec.marshalOComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12440,7 +12440,7 @@ func (ec *executionContext) marshalNComment2ᚕᚖtime_speak_serverᚋsrcᚋserv
 	return ret
 }
 
-func (ec *executionContext) marshalNComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12465,12 +12465,12 @@ func (ec *executionContext) marshalNDateTime2int64(ctx context.Context, sel ast.
 	return res
 }
 
-func (ec *executionContext) unmarshalNForgetInput2time_speak_serverᚋgraphᚋgeneratedᚐForgetInput(ctx context.Context, v interface{}) (ForgetInput, error) {
+func (ec *executionContext) unmarshalNForgetInput2memox_serverᚋgraphᚋgeneratedᚐForgetInput(ctx context.Context, v interface{}) (ForgetInput, error) {
 	res, err := ec.unmarshalInputForgetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx context.Context, sel ast.SelectionSet, v []*hashtag.HashTag) graphql.Marshaler {
+func (ec *executionContext) marshalNHashTag2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx context.Context, sel ast.SelectionSet, v []*hashtag.HashTag) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12494,7 +12494,7 @@ func (ec *executionContext) marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserv
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOHashTag2ᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, sel, v[i])
+			ret[i] = ec.marshalOHashTag2ᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12508,12 +12508,12 @@ func (ec *executionContext) marshalNHashTag2ᚕᚖtime_speak_serverᚋsrcᚋserv
 	return ret
 }
 
-func (ec *executionContext) unmarshalNHashTagInput2time_speak_serverᚋgraphᚋgeneratedᚐHashTagInput(ctx context.Context, v interface{}) (HashTagInput, error) {
+func (ec *executionContext) unmarshalNHashTagInput2memox_serverᚋgraphᚋgeneratedᚐHashTagInput(ctx context.Context, v interface{}) (HashTagInput, error) {
 	res, err := ec.unmarshalInputHashTagInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNHistory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx context.Context, sel ast.SelectionSet, v []*history.History) graphql.Marshaler {
+func (ec *executionContext) marshalNHistory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx context.Context, sel ast.SelectionSet, v []*history.History) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12537,7 +12537,7 @@ func (ec *executionContext) marshalNHistory2ᚕᚖtime_speak_serverᚋsrcᚋserv
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOHistory2ᚖtime_speak_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx, sel, v[i])
+			ret[i] = ec.marshalOHistory2ᚖmemox_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12611,26 +12611,26 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
-func (ec *executionContext) unmarshalNListInput2time_speak_serverᚋgraphᚋgeneratedᚐListInput(ctx context.Context, v interface{}) (ListInput, error) {
+func (ec *executionContext) unmarshalNListInput2memox_serverᚋgraphᚋgeneratedᚐListInput(ctx context.Context, v interface{}) (ListInput, error) {
 	res, err := ec.unmarshalInputListInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNLocalUploadInput2time_speak_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx context.Context, v interface{}) (LocalUploadInput, error) {
+func (ec *executionContext) unmarshalNLocalUploadInput2memox_serverᚋgraphᚋgeneratedᚐLocalUploadInput(ctx context.Context, v interface{}) (LocalUploadInput, error) {
 	res, err := ec.unmarshalInputLocalUploadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNLoginInput2time_speak_serverᚋgraphᚋgeneratedᚐLoginInput(ctx context.Context, v interface{}) (LoginInput, error) {
+func (ec *executionContext) unmarshalNLoginInput2memox_serverᚋgraphᚋgeneratedᚐLoginInput(ctx context.Context, v interface{}) (LoginInput, error) {
 	res, err := ec.unmarshalInputLoginInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNLoginPayload2time_speak_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v LoginPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNLoginPayload2memox_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v LoginPayload) graphql.Marshaler {
 	return ec._LoginPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLoginPayload2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v *LoginPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNLoginPayload2ᚖmemox_serverᚋgraphᚋgeneratedᚐLoginPayload(ctx context.Context, sel ast.SelectionSet, v *LoginPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12640,11 +12640,11 @@ func (ec *executionContext) marshalNLoginPayload2ᚖtime_speak_serverᚋgraphᚋ
 	return ec._LoginPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMemory2time_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v memory.Memory) graphql.Marshaler {
+func (ec *executionContext) marshalNMemory2memox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v memory.Memory) graphql.Marshaler {
 	return ec._Memory(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v []*memory.Memory) graphql.Marshaler {
+func (ec *executionContext) marshalNMemory2ᚕᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v []*memory.Memory) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12668,7 +12668,7 @@ func (ec *executionContext) marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋservi
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, sel, v[i])
+			ret[i] = ec.marshalOMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12682,7 +12682,7 @@ func (ec *executionContext) marshalNMemory2ᚕᚖtime_speak_serverᚋsrcᚋservi
 	return ret
 }
 
-func (ec *executionContext) marshalNMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v *memory.Memory) graphql.Marshaler {
+func (ec *executionContext) marshalNMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v *memory.Memory) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12692,12 +12692,12 @@ func (ec *executionContext) marshalNMemory2ᚖtime_speak_serverᚋsrcᚋservice�
 	return ec._Memory(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRegisterInput2time_speak_serverᚋgraphᚋgeneratedᚐRegisterInput(ctx context.Context, v interface{}) (RegisterInput, error) {
+func (ec *executionContext) unmarshalNRegisterInput2memox_serverᚋgraphᚋgeneratedᚐRegisterInput(ctx context.Context, v interface{}) (RegisterInput, error) {
 	res, err := ec.unmarshalInputRegisterInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v []*resource.Resource) graphql.Marshaler {
+func (ec *executionContext) marshalNResource2ᚕᚖmemox_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v []*resource.Resource) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12721,7 +12721,7 @@ func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋser
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOResource2ᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, sel, v[i])
+			ret[i] = ec.marshalOResource2ᚖmemox_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12735,16 +12735,16 @@ func (ec *executionContext) marshalNResource2ᚕᚖtime_speak_serverᚋsrcᚋser
 	return ret
 }
 
-func (ec *executionContext) unmarshalNSendEmailCodeInput2time_speak_serverᚋgraphᚋgeneratedᚐSendEmailCodeInput(ctx context.Context, v interface{}) (SendEmailCodeInput, error) {
+func (ec *executionContext) unmarshalNSendEmailCodeInput2memox_serverᚋgraphᚋgeneratedᚐSendEmailCodeInput(ctx context.Context, v interface{}) (SendEmailCodeInput, error) {
 	res, err := ec.unmarshalInputSendEmailCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNServerStatus2time_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v ServerStatus) graphql.Marshaler {
+func (ec *executionContext) marshalNServerStatus2memox_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v ServerStatus) graphql.Marshaler {
 	return ec._ServerStatus(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNServerStatus2ᚖtime_speak_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v *ServerStatus) graphql.Marshaler {
+func (ec *executionContext) marshalNServerStatus2ᚖmemox_serverᚋgraphᚋgeneratedᚐServerStatus(ctx context.Context, sel ast.SelectionSet, v *ServerStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12769,7 +12769,7 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNSubComment2ᚕᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v []*comment.Comment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12793,7 +12793,7 @@ func (ec *executionContext) marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋs
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOSubComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
+			ret[i] = ec.marshalOSubComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12807,11 +12807,11 @@ func (ec *executionContext) marshalNSubComment2ᚕᚖtime_speak_serverᚋsrcᚋs
 	return ret
 }
 
-func (ec *executionContext) marshalNSubscribe2time_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v subscribe.Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2memox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v subscribe.Subscribe) graphql.Marshaler {
 	return ec._Subscribe(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v []*subscribe.Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2ᚕᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v []*subscribe.Subscribe) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12835,7 +12835,7 @@ func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋse
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, sel, v[i])
+			ret[i] = ec.marshalOSubscribe2ᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12849,7 +12849,7 @@ func (ec *executionContext) marshalNSubscribe2ᚕᚖtime_speak_serverᚋsrcᚋse
 	return ret
 }
 
-func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalNSubscribe2ᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12859,17 +12859,17 @@ func (ec *executionContext) marshalNSubscribe2ᚖtime_speak_serverᚋsrcᚋservi
 	return ec._Subscribe(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUpdateCommentInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx context.Context, v interface{}) (UpdateCommentInput, error) {
+func (ec *executionContext) unmarshalNUpdateCommentInput2memox_serverᚋgraphᚋgeneratedᚐUpdateCommentInput(ctx context.Context, v interface{}) (UpdateCommentInput, error) {
 	res, err := ec.unmarshalInputUpdateCommentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNUpdateMemoryInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx context.Context, v interface{}) (UpdateMemoryInput, error) {
+func (ec *executionContext) unmarshalNUpdateMemoryInput2memox_serverᚋgraphᚋgeneratedᚐUpdateMemoryInput(ctx context.Context, v interface{}) (UpdateMemoryInput, error) {
 	res, err := ec.unmarshalInputUpdateMemoryInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNUpdateSubscribeInput2time_speak_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx context.Context, v interface{}) (UpdateSubscribeInput, error) {
+func (ec *executionContext) unmarshalNUpdateSubscribeInput2memox_serverᚋgraphᚋgeneratedᚐUpdateSubscribeInput(ctx context.Context, v interface{}) (UpdateSubscribeInput, error) {
 	res, err := ec.unmarshalInputUpdateSubscribeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -12889,11 +12889,11 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	return res
 }
 
-func (ec *executionContext) marshalNUploadTokenPayload2time_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v utils.UploadTokenPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUploadTokenPayload2memox_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v utils.UploadTokenPayload) graphql.Marshaler {
 	return ec._UploadTokenPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUploadTokenPayload2ᚖtime_speak_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v *utils.UploadTokenPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUploadTokenPayload2ᚖmemox_serverᚋsrcᚋserviceᚋstorageᚋutilsᚐUploadTokenPayload(ctx context.Context, sel ast.SelectionSet, v *utils.UploadTokenPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12903,11 +12903,11 @@ func (ec *executionContext) marshalNUploadTokenPayload2ᚖtime_speak_serverᚋsr
 	return ec._UploadTokenPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUser2time_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx context.Context, sel ast.SelectionSet, v user.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2memox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx context.Context, sel ast.SelectionSet, v user.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖtime_speak_serverᚋsrcᚋserviceᚋuserᚐUser(ctx context.Context, sel ast.SelectionSet, v *user.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖmemox_serverᚋsrcᚋserviceᚋuserᚐUser(ctx context.Context, sel ast.SelectionSet, v *user.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -13196,21 +13196,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalOComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Comment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOHashTag2ᚖtime_speak_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx context.Context, sel ast.SelectionSet, v *hashtag.HashTag) graphql.Marshaler {
+func (ec *executionContext) marshalOHashTag2ᚖmemox_serverᚋsrcᚋserviceᚋhashtagᚐHashTag(ctx context.Context, sel ast.SelectionSet, v *hashtag.HashTag) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._HashTag(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOHistory2ᚖtime_speak_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx context.Context, sel ast.SelectionSet, v *history.History) graphql.Marshaler {
+func (ec *executionContext) marshalOHistory2ᚖmemox_serverᚋsrcᚋserviceᚋhistoryᚐHistory(ctx context.Context, sel ast.SelectionSet, v *history.History) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -13233,14 +13233,14 @@ func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.
 	return res
 }
 
-func (ec *executionContext) marshalOMemory2ᚖtime_speak_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v *memory.Memory) graphql.Marshaler {
+func (ec *executionContext) marshalOMemory2ᚖmemox_serverᚋsrcᚋserviceᚋmemoryᚐMemory(ctx context.Context, sel ast.SelectionSet, v *memory.Memory) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Memory(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOResource2ᚖtime_speak_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v *resource.Resource) graphql.Marshaler {
+func (ec *executionContext) marshalOResource2ᚖmemox_serverᚋsrcᚋserviceᚋresourceᚐResource(ctx context.Context, sel ast.SelectionSet, v *resource.Resource) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -13263,14 +13263,14 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalOSubComment2ᚖtime_speak_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalOSubComment2ᚖmemox_serverᚋsrcᚋserviceᚋcommentᚐComment(ctx context.Context, sel ast.SelectionSet, v *comment.Comment) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SubComment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSubscribe2ᚖtime_speak_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
+func (ec *executionContext) marshalOSubscribe2ᚖmemox_serverᚋsrcᚋserviceᚋsubscribeᚐSubscribe(ctx context.Context, sel ast.SelectionSet, v *subscribe.Subscribe) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	mail "github.com/xhit/go-simple-mail/v2"
+	"memox_server/src/log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	"time_speak_server/src/log"
 )
 
 type Svc struct {

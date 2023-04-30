@@ -7,10 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"memox_server/src/exception"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/user"
 	"time"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/user"
 )
 
 type Svc struct {

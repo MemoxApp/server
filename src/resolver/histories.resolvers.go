@@ -6,11 +6,11 @@ package resolver
 
 import (
 	"context"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/history"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/user"
+	"memox_server/graph/generated"
+	"memox_server/src/service/hashtag"
+	"memox_server/src/service/history"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/user"
 )
 
 // ID is the resolver for the id field.

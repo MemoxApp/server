@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"memox_server/src/exception"
+	"memox_server/src/log"
 	"strings"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/log"
 )
 
 type Info struct {

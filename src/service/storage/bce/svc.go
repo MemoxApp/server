@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/baidubce/bce-sdk-go/services/bos"
 	"github.com/baidubce/bce-sdk-go/services/sts"
-	"time_speak_server/src/service/storage/utils"
-	"time_speak_server/src/service/user"
+	"memox_server/src/service/storage/utils"
+	"memox_server/src/service/user"
 )
 
 type BCE struct {

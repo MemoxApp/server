@@ -8,11 +8,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"memox_server/src/exception"
+	"memox_server/src/opts"
+	"memox_server/src/service/cache"
 	"strconv"
 	"time"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/opts"
-	"time_speak_server/src/service/cache"
 )
 
 type (
@@ -148,7 +148,7 @@ func (s *Svc) GetTokenByMail(ctx context.Context, mail string) (jwt JWTClaims, t
 		return
 	}
 	jwt = JWTClaims{
-		Subject:    "TimeSpeak",
+		Subject:    "Memox",
 		ExpiresAt:  time.Now().Add(time.Duration(s.TokenExpire) * time.Minute).Unix(),
 		ID:         u.ID(),
 		Permission: u.Permission,

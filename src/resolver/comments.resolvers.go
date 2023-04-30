@@ -6,13 +6,13 @@ package resolver
 
 import (
 	"context"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/opts"
-	"time_speak_server/src/service/comment"
-	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/user"
+	"memox_server/graph/generated"
+	"memox_server/src/exception"
+	"memox_server/src/opts"
+	"memox_server/src/service/comment"
+	"memox_server/src/service/hashtag"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/user"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

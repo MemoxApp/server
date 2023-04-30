@@ -7,9 +7,9 @@ builds:
       - linux
       - windows
       - darwin
-    id: timespeak_server
+    id: memox_server
     dir: ./src
-    binary: timespeak-server
+    binary: memox-server
 
 archives:
   - format: tar.gz

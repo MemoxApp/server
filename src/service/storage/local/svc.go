@@ -5,12 +5,12 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-redis/redis/v8"
 	"io"
+	"memox_server/src/exception"
+	"memox_server/src/service/storage/utils"
+	"memox_server/src/service/user"
 	"os"
 	"path/filepath"
 	"time"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/service/storage/utils"
-	"time_speak_server/src/service/user"
 )
 
 type Local struct {

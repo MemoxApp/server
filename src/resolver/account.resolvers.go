@@ -6,12 +6,12 @@ package resolver
 
 import (
 	"context"
+	"memox_server/graph/generated"
+	"memox_server/src/exception"
+	"memox_server/src/service/mail"
+	"memox_server/src/service/user"
 	"strings"
 	"time"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/service/mail"
-	"time_speak_server/src/service/user"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

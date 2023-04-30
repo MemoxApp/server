@@ -2,8 +2,8 @@ version: "3.8"
 
 services:
   app:
-    image: thankrain/timespeak:latest
-    container_name: timespeak_app
+    image: thankrain/memox:latest
+    container_name: memox_app
     restart: always
     ports:
       - "8080:8080"
@@ -18,7 +18,7 @@ services:
       - mongo
       - redis
     networks:
-      - timespeak
+      - memox
   mongo:
     image: mongo:5.0.2
     volumes:
@@ -26,26 +26,26 @@ services:
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Asia/Shanghai
-      - MONGO_INITDB_DATABASE=timespeak
-    container_name: timespeak_dev_mongo
+      - MONGO_INITDB_DATABASE=memox
+    container_name: memox_dev_mongo
     restart: always
     expose:
       - "27017"
     networks:
-      - timespeak
+      - memox
   redis:
     image: redis:6.2.5
     expose:
       - "6379"
     environment:
       - TZ=Asia/Shanghai
-    container_name: timespeak_dev_redis
+    container_name: memox_dev_redis
     volumes:
       - ./data/redis:/data
       - /etc/localtime:/etc/localtime:ro
     restart: always
     networks:
-      - timespeak
+      - memox
 networks:
-  timespeak:
+  memox:
     driver: bridge

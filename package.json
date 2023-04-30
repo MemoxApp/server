@@ -1,7 +1,7 @@
 {
-  "name": "time-speak-server",
+  "name": "memox-server",
   "version": "1.0.0",
-  "description": "Time Speak Open source Server",
+  "description": "Memox Open source Server",
   "main": "index.js",
   "directories": {
     "doc": "docs",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PBK-B/time-speak-server.git"
+    "url": "git+https://github.com/PBK-B/memox-server.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/PBK-B/time-speak-server/issues"
+    "url": "https://github.com/PBK-B/memox-server/issues"
   },
-  "homepage": "https://github.com/PBK-B/time-speak-server#readme",
+  "homepage": "https://github.com/PBK-B/memox-server#readme",
   "devDependencies": {
     "vitepress": "^1.0.0-alpha.75"
   }

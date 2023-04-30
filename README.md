@@ -1,17 +1,14 @@
 <center>
-<h1>Time Speak Opensource Server</h1>
+<h1>Memox Opensource Server</h1>
 
-悄语时光，私语心声。  
-Talk to time, talk to self.
+Talk to memory, talk to time.
 </center>
 
 # 简介
 
-在时光语中，您可以记录自己的想法、经历和感受，您可以随时随地回顾过去的自己，并在当下做出对过去的回复与评价。
+在忆盒中，您可以记录自己的想法、经历和感受，您可以随时随地回顾过去的自己，并在当下做出对过去的回复与评价。
 
-时光语中除非您主动分享，否则只有您自己可以访问和查看您所有记录的内容。您可以自由地在App中发表和编辑帖子，也可以随时删除或归档帖子。时光语将帮助您更好地记录和管理自己的想法和回忆。
-
-时光语，意喻时间和回忆，代表与过去的自己对话。时光流淌，一切皆有答案。
+忆盒中除非您主动分享，否则只有您自己可以访问和查看您所有记录的内容。您可以自由地在App中发表和编辑帖子，也可以随时删除或归档帖子。忆盒将帮助您更好地记录和管理自己的想法和回忆。
 
 # 特性
 
@@ -70,7 +67,7 @@ storage: # 存储配置
     secret_access_key: "<SecretAccessKey>" # 百度云SecretAccessKey
     # 如果通过CDN接入此处填写CDN域名(需要包含协议头)
     end_point: "https://su.bcebos.com" # 存储桶Endpoint: <region>.bcebos.com，如需使用 https 协议请添加 https 协议头，如：https://<region>.bcebos.com
-    bucket_name: "timespeak" # 此处填写存储桶名称，需要手动预先创建
+    bucket_name: "memox" # 此处填写存储桶名称，需要手动预先创建
     cdn: false # 不使用 CDN
     region: "su" # 存储桶所在区域
     callback_token: "<回调鉴权密钥>" # 存储桶回调通知鉴权密钥，防止伪造请求，尽可能只包含数字与字母避免影响URL参数的解析
@@ -79,9 +76,9 @@ storage: # 存储配置
 ##### 创建存储桶事件通知
 
 状态： **开启**  
-名称： **TimeSpeakUploadNotify**（随意填写）  
+名称： **MemoxUploadNotify**（随意填写）  
 规则ID： **UploadNotify** （随意填写）  
-产品ID： **TimeSpeak**（随意填写）  
+产品ID： **Memox**（随意填写）  
 加密鉴权：**关闭**  
 事件监听配置： **开启**  
 监测事件：勾选`PutObject`  
@@ -149,7 +146,7 @@ CDN 配置 > 回源配置 > 私有Bucket回源 开启
 ```
 MIT License
 
-Copyright (c) 2023 Time Speak App
+Copyright (c) 2023 Memox App
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
