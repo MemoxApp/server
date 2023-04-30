@@ -11,7 +11,7 @@ hero:
       link: https://github.com/TimeSpeakApp/server#readme
     - theme: alt
       text: API Document
-      link: /api
+      link: /API
 
 features:
   - icon: 🪄
