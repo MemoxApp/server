@@ -31,9 +31,6 @@ func NewLocalSvc(config Config, r *redis.Client) *Local {
 }
 
 func (b *Local) GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error) {
-	if !utils.CheckFileName(fileName) {
-		return nil, exception.ErrInvalidFileName
-	}
 	userId, err := user.GetUserFromJwt(ctx)
 	if err != nil {
 		return nil, err
@@ -104,5 +101,5 @@ func (b *Local) Upload(ctx context.Context, session string, upload graphql.Uploa
 		}
 	}
 	_, _ = b.r.Del(ctx, "Local-"+session).Result()
-	return path, size, nil
+	return s, size, nil
 }

@@ -2,13 +2,7 @@ package resource
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"regexp"
 )
-
-func ParseResources(content string) []string {
-	r, _ := regexp.Compile("#\\S[^\\n]+? ")
-	return r.FindAllString(content, -1)
-}
 
 // UniqueArr 去重
 func UniqueArr(m []primitive.ObjectID) []primitive.ObjectID {

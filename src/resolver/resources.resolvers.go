@@ -39,16 +39,15 @@ func (r *mutationResolver) DeleteResource(ctx context.Context, input string) (bo
 
 // GetToken is the resolver for the getToken field.
 func (r *mutationResolver) GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error) {
-	token, err := r.storageSvc.GetToken(ctx, fileName)
+	ok, newFileName := utils.CheckFileName(fileName)
+	if !ok {
+		return nil, exception.ErrInvalidFileName
+	}
+	token, err := r.storageSvc.GetToken(ctx, newFileName)
 	if err != nil {
 		return nil, err
 	}
-	userID, err := user.GetUserFromJwt(ctx)
-	if err != nil {
-		return nil, err
-	}
-	absPath := utils.GeneratePath(userID.Hex(), fileName)
-	res, err := r.resourceSvc.NewResource(ctx, absPath, 0)
+	res, err := r.resourceSvc.NewResource(ctx, newFileName, 0)
 	if err != nil {
 		return nil, err
 	}

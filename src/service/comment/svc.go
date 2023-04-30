@@ -125,6 +125,9 @@ func (s *Svc) GetComment(ctx context.Context, id primitive.ObjectID) (*Comment, 
 	var comment Comment
 	err = s.m.FindOne(ctx, bson.M{"uid": uid, "_id": id}).Decode(&comment)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, exception.ErrCommentNotFound
+		}
 		return nil, err
 	}
 	return &comment, nil
@@ -146,7 +149,11 @@ func (s *Svc) GetComments(ctx context.Context, parentID string, page, size int64
 			"create_time": order,
 		}
 	}
-	data, err := s.m.Find(ctx, bson.M{"parent_id": parentID, "archived": archived}, &options.FindOptions{
+	id, err := primitive.ObjectIDFromHex(parentID)
+	if err != nil {
+		return nil, err
+	}
+	data, err := s.m.Find(ctx, bson.M{"parent_id": id, "archived": archived}, &options.FindOptions{
 		Skip:  &skip,
 		Limit: &size,
 		Sort:  sort,

@@ -326,6 +326,7 @@ func (s *Svc) LocalUpload(ctx context.Context, session string, upload graphql.Up
 	if err != nil {
 		return "", err
 	}
+	println("fileName:" + l)
 	id, err := s.UpdateResourceSize(ctx, l, size)
 	return id, err
 }

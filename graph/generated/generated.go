@@ -133,7 +133,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AllComments      func(childComplexity int, id string, page int, size int, desc bool) int
+		AllComments      func(childComplexity int, id string, page int64, size int64, desc bool) int
 		AllHashTags      func(childComplexity int, input ListInput) int
 		AllHistories     func(childComplexity int, id string, page int64, size int64, desc bool) int
 		AllMemories      func(childComplexity int, input ListInput) int
@@ -143,7 +143,7 @@ type ComplexityRoot struct {
 		CurrentUser      func(childComplexity int) int
 		Memory           func(childComplexity int, input string) int
 		Status           func(childComplexity int) int
-		SubComments      func(childComplexity int, id string, page int, size int, desc bool) int
+		SubComments      func(childComplexity int, id string, page int64, size int64, desc bool) int
 	}
 
 	Resource struct {
@@ -249,8 +249,8 @@ type MutationResolver interface {
 	DeleteSubscribe(ctx context.Context, input string) (bool, error)
 }
 type QueryResolver interface {
-	AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
-	SubComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error)
+	AllComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error)
+	SubComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error)
 	AllHashTags(ctx context.Context, input ListInput) ([]*hashtag.HashTag, error)
 	AllHistories(ctx context.Context, id string, page int64, size int64, desc bool) ([]*history.History, error)
 	AllMemories(ctx context.Context, input ListInput) ([]*memory.Memory, error)
@@ -776,7 +776,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.AllComments(childComplexity, args["id"].(string), args["page"].(int), args["size"].(int), args["desc"].(bool)), true
+		return e.complexity.Query.AllComments(childComplexity, args["id"].(string), args["page"].(int64), args["size"].(int64), args["desc"].(bool)), true
 
 	case "Query.allHashTags":
 		if e.complexity.Query.AllHashTags == nil {
@@ -881,7 +881,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SubComments(childComplexity, args["id"].(string), args["page"].(int), args["size"].(int), args["desc"].(bool)), true
+		return e.complexity.Query.SubComments(childComplexity, args["id"].(string), args["page"].(int64), args["size"].(int64), args["desc"].(bool)), true
 
 	case "Resource.create_time":
 		if e.complexity.Resource.CreateTime == nil {
@@ -1269,15 +1269,15 @@ input SendEmailCodeInput {
     "所有Comments，按创建时间排序，默认降序"
     allComments(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true
     ):[Comment]! @auth
     "所有SubComments，按创建时间排序，默认降序"
     subComments(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true
     ):[SubComment]! @auth
 }
@@ -1960,19 +1960,19 @@ func (ec *executionContext) field_Query_allComments_args(ctx context.Context, ra
 		}
 	}
 	args["id"] = arg0
-	var arg1 int
+	var arg1 int64
 	if tmp, ok := rawArgs["page"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["page"] = arg1
-	var arg2 int
+	var arg2 int64
 	if tmp, ok := rawArgs["size"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg2, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2155,19 +2155,19 @@ func (ec *executionContext) field_Query_subComments_args(ctx context.Context, ra
 		}
 	}
 	args["id"] = arg0
-	var arg1 int
+	var arg1 int64
 	if tmp, ok := rawArgs["page"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg1, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["page"] = arg1
-	var arg2 int
+	var arg2 int64
 	if tmp, ok := rawArgs["size"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("size"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg2, err = ec.unmarshalNInt642int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -5277,7 +5277,7 @@ func (ec *executionContext) _Query_allComments(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().AllComments(rctx, fc.Args["id"].(string), fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
+			return ec.resolvers.Query().AllComments(rctx, fc.Args["id"].(string), fc.Args["page"].(int64), fc.Args["size"].(int64), fc.Args["desc"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {
@@ -5372,7 +5372,7 @@ func (ec *executionContext) _Query_subComments(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().SubComments(rctx, fc.Args["id"].(string), fc.Args["page"].(int), fc.Args["size"].(int), fc.Args["desc"].(bool))
+			return ec.resolvers.Query().SubComments(rctx, fc.Args["id"].(string), fc.Args["page"].(int64), fc.Args["size"].(int64), fc.Args["desc"].(bool))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Auth == nil {

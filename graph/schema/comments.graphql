@@ -2,15 +2,15 @@ extend type Query {
     "所有Comments，按创建时间排序，默认降序"
     allComments(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true
     ):[Comment]! @auth
     "所有SubComments，按创建时间排序，默认降序"
     subComments(
         id: ID!,
-        page: Int!,
-        size: Int!,
+        page: Int64!,
+        size: Int64!,
         desc: Boolean! = true
     ):[SubComment]! @auth
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/baidubce/bce-sdk-go/services/bos"
 	"github.com/baidubce/bce-sdk-go/services/sts"
-	"time_speak_server/src/exception"
 	"time_speak_server/src/service/storage/utils"
 	"time_speak_server/src/service/user"
 )
@@ -45,9 +44,6 @@ func NewBCESvc(config Config) *BCE {
 }
 
 func (b *BCE) GetToken(ctx context.Context, fileName string) (*utils.UploadTokenPayload, error) {
-	if !utils.CheckFileName(fileName) {
-		return nil, exception.ErrInvalidFileName
-	}
 	userId, err := user.GetUserFromJwt(ctx)
 	if err != nil {
 		return nil, err

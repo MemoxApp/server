@@ -47,6 +47,9 @@ func (r *commentResolver) SubComments(ctx context.Context, obj *comment.Comment)
 	if err != nil {
 		return nil, err
 	}
+	for _, m := range comments {
+		m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content) // 插入资源链接
+	}
 	return comments, nil
 }
 
@@ -116,6 +119,17 @@ func (r *mutationResolver) UpdateComment(ctx context.Context, input generated.Up
 	if err != nil {
 		return false, exception.ErrInvalidID
 	}
+	oldComment, err := r.commentSvc.GetComment(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	userID, err := user.GetUserFromJwt(ctx)
+	if err != nil {
+		return false, exception.ErrPermissionDenied
+	}
+	if oldComment.Uid != userID {
+		return false, exception.ErrPermissionDenied
+	}
 	var toUpdate []opts.Option
 	if input.Content != nil && len(*input.Content) > 0 {
 		tags, err := r.hashtagSvc.MakeHashTags(ctx, *input.Content)
@@ -149,21 +163,20 @@ func (r *mutationResolver) DeleteComment(ctx context.Context, input string) (boo
 }
 
 // AllComments is the resolver for the allComments field.
-func (r *queryResolver) AllComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error) {
-	comments, err := r.commentSvc.GetComments(ctx, id, int64(page), int64(size), true, desc, false)
+func (r *queryResolver) AllComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error) {
+	comments, err := r.commentSvc.GetComments(ctx, id, page, size, true, desc, false)
 	if err != nil {
 		return nil, err
+	}
+	for _, m := range comments {
+		m.Content, err = r.resourceSvc.InsertResourceUrl(ctx, m.Content) // 插入资源链接
 	}
 	return comments, nil
 }
 
 // SubComments is the resolver for the subComments field.
-func (r *queryResolver) SubComments(ctx context.Context, id string, page int, size int, desc bool) ([]*comment.Comment, error) {
-	comments, err := r.commentSvc.GetComments(ctx, id, int64(page), int64(size), true, desc, false)
-	if err != nil {
-		return nil, err
-	}
-	return comments, nil
+func (r *queryResolver) SubComments(ctx context.Context, id string, page int64, size int64, desc bool) ([]*comment.Comment, error) {
+	return r.AllComments(ctx, id, page, size, desc)
 }
 
 // ID is the resolver for the id field.
