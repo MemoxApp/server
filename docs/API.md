@@ -2,21 +2,14 @@
 
 ## 已知问题
 
-Memory 删除时 Comments及其子回复未删除（有必要删除）  
-Memory 删除时 历史记录未删除（有必要删除）  
-Memory 更新后 存在历史记录对资源的引用
+Memory 删除时Comments及其子回复未删除（有必要删除）  
+Memory 删除时历史记录未删除（有必要删除）  
+Memory 更新后存在历史记录对资源的引用(忽略)
 
 ## 待测试接口
 
 ```
-Mutation
-
-addSubscribe(input: AddSubscribeInput!): ID!
-updateSubscribe(input: UpdateSubscribeInput!): Boolean!
-deleteSubscribe(input: ID!): Boolean!
-
 其他
-百度云BOS上传测试
 资源链接生成测试
 其他用户内容可见性测试
 ```
@@ -790,6 +783,71 @@ Query
         create_time
         update_time
     }
+}
+```
+
+### 创建订阅
+
+Query
+
+```graphql
+mutation($input:AddSubscribeInput!){
+    addSubscribe(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": {
+    "name": "1GB",
+    "capacity": 1024000000,
+    "enable": true
+  }
+}
+```
+
+### 更新订阅
+
+Query
+
+```graphql
+mutation($input:UpdateSubscribeInput!){
+    updateSubscribe(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": {
+    "id": "644dddce8a942a83b12f96ca",
+    "name": "1GB",
+    "capacity": 1024000000,
+    "enable": true
+  }
+}
+```
+
+### 删除订阅
+
+当且仅当该订阅下的用户数为0时允许删除
+
+Query
+
+```graphql
+mutation($input:ID!){
+    deleteSubscribe(input:$input)
+}
+```
+
+Input
+
+```json
+{
+  "input": "644dddce8a942a83b12f96ca"
 }
 ```
 

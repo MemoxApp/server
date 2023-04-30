@@ -1,24 +1,38 @@
-app:
-  addr: ":3000"
-  host: "timespeak.runs.fun"
-  prefix: "/api"
-db:
-  mongo_addr: "localhost:27017"
-  mongo_db: "timespeak"
-  redis_addr: "localhost:6379"
-  redis_db: 0
-debug: true
-user:
-  token_expire: 43200 # 30 * 24 * 60
-  token_secret: "PLeAseSEtaRaDoMS#cret" # do not use the default secret
-mail:
-  code_expire: 10
-  code_length: 6
-  code_cool_down: 1
-  smtp_mail_host: "smtp.exmail.qq.com"
-  smtp_mail_port: 465
-  smtp_mail_user: "no_reply@example.com"
-  smtp_mail_pwd: "PASSWORD"
-  smtp_mail_nickname: "时光语"
-  subject: "【时光语】邮箱验证提醒"
-  template: "env/template.html"
+db: # 数据库配置
+  mongo_addr: "localhost:27017" # MongoDB 数据库地址
+  mongo_db: "timespeak" # MongoDB 数据库名称
+  redis_addr: "localhost:6379" # Redis 地址
+  redis_db: 0 # Redis 数据库编号
+debug: true # 调试模式
+user: # 用户配置
+  token_expire: 43200 # 30 * 24 * 60 = 30 天
+  token_secret: "<JWT密钥>" # 不要使用默认密钥
+mail: # 邮件发送配置
+  code_expire: 10 # 验证码有效时长(分钟)
+  code_length: 6 # 验证码长度
+  code_cool_down: 1 # 验证码冷却时间(分钟)
+  smtp_mail_host: "smtp.exmail.qq.com" # SMTP服务器地址
+  smtp_mail_port: 465 # SMTP服务器端口
+  smtp_mail_user: "example@example.com" # 邮箱用户名
+  smtp_mail_pwd: "<邮箱密码>" # 邮箱密码
+  smtp_mail_nickname: "时光语" # 发件人昵称
+  subject: "【时光语】邮箱验证提醒" # 邮件主题
+  template: "env/template.html" # 邮件模板
+subscribe: # 订阅配置
+  default_capacity: 104857600 # 默认容量(Bytes)
+  default_subscribe_name: "免费版" # 默认订阅名称
+storage: # 存储配置
+  storage_provider: "bce" # 存储提供商 local/bce
+  bce: # 百度云配置
+    access_key_id: "<AccessKeyID>" # 百度云AccessKeyID
+    secret_access_key: "<SecretAccessKey>" # 百度云SecretAccessKey
+    # 如果通过CDN接入此处填写CDN域名(需要包含协议头)
+    end_point: "https://cdn.ts.runs.fun" # 如果直接使用存储桶此处填写存储桶Endpoint(协议头可选)：[http://|https://]<region>.bcebos.com
+    bucket_name: "" # 如果通过CDN接入此处留空, 如果直接使用存储桶此处填写存储桶名称
+    cdn: true # 是否通过CDN接入
+    cdn_auth_key: "<鉴权密钥，与CDN控制台处填写的一致>" # CDN鉴权密钥（仅通过CDN接入时需要填写）
+    region: "su" # 存储桶所在区域，CDN接入时也需要填写
+  local: # 本地存储配置
+    folder: "./data/storage" # 存储文件夹
+    host: "localhost:8080" # 本地存储访问地址
+    schema: "http" # 本地存储访问协议
