@@ -2,10 +2,10 @@ package storage
 
 import (
 	"github.com/go-redis/redis/v8"
+	"memox_server/src/service/storage/bce"
+	"memox_server/src/service/storage/local"
+	"memox_server/src/service/storage/utils"
 	"strings"
-	"time_speak_server/src/service/storage/bce"
-	"time_speak_server/src/service/storage/local"
-	"time_speak_server/src/service/storage/utils"
 )
 
 func NewStorageSvc(conf Config, r *redis.Client) utils.Service {

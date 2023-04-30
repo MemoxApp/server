@@ -24,7 +24,7 @@ func setLogger(encoderConfig zapcore.EncoderConfig) {
 
 	logFile, ok := os.LookupEnv("LOG_FILE")
 	if !ok {
-		logFile = "logs/timespeak.log"
+		logFile = "logs/memox.log"
 	}
 	fileWriteSyncer := zapcore.AddSync(&lumberjack.Logger{
 		Filename: logFile,

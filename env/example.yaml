@@ -1,6 +1,6 @@
 db: # 数据库配置
   mongo_addr: "mongo:27017" # MongoDB 数据库地址
-  mongo_db: "timespeak" # MongoDB 数据库名称
+  mongo_db: "memox" # MongoDB 数据库名称
   redis_addr: "redis:6379" # Redis 地址
   redis_db: 0 # Redis 数据库编号
 debug: true # 调试模式
@@ -15,8 +15,8 @@ mail: # 邮件发送配置
   smtp_mail_port: 465 # SMTP服务器端口
   smtp_mail_user: "example@example.com" # 邮箱用户名
   smtp_mail_pwd: "<邮箱密码>" # 邮箱密码
-  smtp_mail_nickname: "时光语" # 发件人昵称
-  subject: "【时光语】邮箱验证提醒" # 邮件主题
+  smtp_mail_nickname: "忆盒" # 发件人昵称
+  subject: "【忆盒】邮箱验证提醒" # 邮件主题
   template: "env/template.html" # 邮件模板
 subscribe: # 订阅配置
   default_capacity: 104857600 # 默认容量(Bytes)
@@ -27,7 +27,7 @@ storage: # 存储配置
     access_key_id: "<AccessKeyID>" # 百度云AccessKeyID
     secret_access_key: "<SecretAccessKey>" # 百度云SecretAccessKey
     # 如果通过CDN接入此处填写CDN域名(需要包含协议头)
-    end_point: "https://cdn.ts.runs.fun" # 如果直接使用存储桶此处填写存储桶Endpoint(协议头可选)：[http://|https://]<region>.bcebos.com
+    end_point: "https://cdn.memox.runs.fun" # 如果直接使用存储桶此处填写存储桶Endpoint(协议头可选)：[http://|https://]<region>.bcebos.com
     bucket_name: "" # 如果通过CDN接入此处留空, 如果直接使用存储桶此处填写存储桶名称
     cdn: true # 是否通过CDN接入
     cdn_auth_key: "<鉴权密钥，与CDN控制台处填写的一致>" # CDN鉴权密钥（仅通过CDN接入时需要填写）

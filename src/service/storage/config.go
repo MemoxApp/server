@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"time_speak_server/src/service/storage/bce"
-	"time_speak_server/src/service/storage/local"
+	"memox_server/src/service/storage/bce"
+	"memox_server/src/service/storage/local"
 )
 
 type Config struct {

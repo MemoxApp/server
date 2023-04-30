@@ -18,14 +18,14 @@ resolver:
   package: resolver
 
 autobind:
-  - "time_speak_server/src/service/memory"
-  - "time_speak_server/src/service/user"
-  - "time_speak_server/src/service/hashtag"
-  - "time_speak_server/src/service/history"
-  - "time_speak_server/src/service/comment"
-  - "time_speak_server/src/service/subscribe"
-  - "time_speak_server/src/service/resource"
-  - "time_speak_server/src/service/storage/utils"
+  - "memox_server/src/service/memory"
+  - "memox_server/src/service/user"
+  - "memox_server/src/service/hashtag"
+  - "memox_server/src/service/history"
+  - "memox_server/src/service/comment"
+  - "memox_server/src/service/subscribe"
+  - "memox_server/src/service/resource"
+  - "memox_server/src/service/storage/utils"
 
 models:
   ID:
@@ -47,4 +47,4 @@ models:
       - github.com/99designs/gqlgen/graphql.Int64
   SubComment:
     model:
-      - time_speak_server/src/service/comment.Comment
+      - memox_server/src/service/comment.Comment

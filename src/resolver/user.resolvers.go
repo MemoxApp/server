@@ -6,9 +6,9 @@ package resolver
 
 import (
 	"context"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/service/subscribe"
-	"time_speak_server/src/service/user"
+	"memox_server/graph/generated"
+	"memox_server/src/service/subscribe"
+	"memox_server/src/service/user"
 )
 
 // CurrentUser is the resolver for the currentUser field.

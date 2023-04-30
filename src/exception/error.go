@@ -2,7 +2,7 @@ package exception
 
 import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
-	"time_speak_server/src/log"
+	"memox_server/src/log"
 )
 
 var (

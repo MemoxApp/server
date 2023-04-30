@@ -3,17 +3,17 @@ package resolver
 import (
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time_speak_server/src/config"
-	"time_speak_server/src/service/comment"
-	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/history"
-	"time_speak_server/src/service/mail"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/resource"
-	"time_speak_server/src/service/storage"
-	"time_speak_server/src/service/storage/utils"
-	"time_speak_server/src/service/subscribe"
-	"time_speak_server/src/service/user"
+	"memox_server/src/config"
+	"memox_server/src/service/comment"
+	"memox_server/src/service/hashtag"
+	"memox_server/src/service/history"
+	"memox_server/src/service/mail"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/resource"
+	"memox_server/src/service/storage"
+	"memox_server/src/service/storage/utils"
+	"memox_server/src/service/subscribe"
+	"memox_server/src/service/user"
 )
 
 // This file will not be regenerated automatically.

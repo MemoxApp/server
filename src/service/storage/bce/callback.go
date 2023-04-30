@@ -5,8 +5,8 @@ import (
 	"github.com/goccy/go-json"
 	"go.mongodb.org/mongo-driver/mongo"
 	"io"
-	"time_speak_server/src/log"
-	"time_speak_server/src/service/resource"
+	"memox_server/src/log"
+	"memox_server/src/service/resource"
 )
 
 func Callback(conf Config, m *mongo.Collection) func(c *gin.Context) {

@@ -6,12 +6,12 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"memox_server/graph"
+	"memox_server/src/config"
+	"memox_server/src/db"
+	"memox_server/src/log"
+	"memox_server/src/service/storage/bce"
 	"os"
-	"time_speak_server/graph"
-	"time_speak_server/src/config"
-	"time_speak_server/src/db"
-	"time_speak_server/src/log"
-	"time_speak_server/src/service/storage/bce"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	}
 	conf := config.MustReadConfigFile(configFile)
 
-	fmt.Printf("TimeSpeak Server Version: %s(%d) Build: %d\n", config.VersionName, config.VersionCode, config.Build)
+	fmt.Printf("Memox Server Version: %s(%d) Build: %d\n", config.VersionName, config.VersionCode, config.Build)
 	if conf.Debug {
 		log.SetDev()
 	} else {

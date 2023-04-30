@@ -2,17 +2,17 @@ package config
 
 import (
 	"gopkg.in/yaml.v3"
+	"memox_server/src/log"
+	"memox_server/src/service/comment"
+	"memox_server/src/service/hashtag"
+	"memox_server/src/service/history"
+	"memox_server/src/service/mail"
+	"memox_server/src/service/memory"
+	"memox_server/src/service/resource"
+	"memox_server/src/service/storage"
+	"memox_server/src/service/subscribe"
+	"memox_server/src/service/user"
 	"os"
-	"time_speak_server/src/log"
-	"time_speak_server/src/service/comment"
-	"time_speak_server/src/service/hashtag"
-	"time_speak_server/src/service/history"
-	"time_speak_server/src/service/mail"
-	"time_speak_server/src/service/memory"
-	"time_speak_server/src/service/resource"
-	"time_speak_server/src/service/storage"
-	"time_speak_server/src/service/subscribe"
-	"time_speak_server/src/service/user"
 )
 
 type ContextKey string

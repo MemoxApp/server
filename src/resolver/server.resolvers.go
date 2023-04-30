@@ -6,8 +6,8 @@ package resolver
 
 import (
 	"context"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/config"
+	"memox_server/graph/generated"
+	"memox_server/src/config"
 )
 
 // Status is the resolver for the status field.

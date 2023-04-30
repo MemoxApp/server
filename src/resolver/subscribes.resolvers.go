@@ -6,10 +6,10 @@ package resolver
 
 import (
 	"context"
-	"time_speak_server/graph/generated"
-	"time_speak_server/src/exception"
-	"time_speak_server/src/opts"
-	"time_speak_server/src/service/subscribe"
+	"memox_server/graph/generated"
+	"memox_server/src/exception"
+	"memox_server/src/opts"
+	"memox_server/src/service/subscribe"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

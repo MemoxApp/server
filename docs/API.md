@@ -9,7 +9,7 @@
 ### Endpoint
 
 ```
-[POST] https://ts.runs.fun/query
+[POST] https://memox.runs.fun/query
 ```
 
 ### 在线调试
@@ -17,13 +17,13 @@
 仅在 Debug 模式下可用
 
 ```
-https://ts.runs.fun/play
+https://memox.runs.fun/play
 ```
 
 ### 百度云事件通知地址
 
 ```
-https://ts.runs.fun/notify/bce
+https://memox.runs.fun/notify/bce
 ```
 
 ## Account

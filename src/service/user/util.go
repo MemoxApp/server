@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"time_speak_server/src/exception"
+	"memox_server/src/exception"
 )
 
 // EncryptPassword 使用BCrypt加密密码
