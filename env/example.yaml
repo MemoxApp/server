@@ -17,7 +17,7 @@ mail: # 邮件发送配置
   smtp_mail_pwd: "<邮箱密码>" # 邮箱密码
   smtp_mail_nickname: "忆盒" # 发件人昵称
   subject: "【忆盒】邮箱验证提醒" # 邮件主题
-  template: "env/template.html" # 邮件模板
+  template: "/app/env/template.html" # 邮件模板
 subscribe: # 订阅配置
   default_capacity: 104857600 # 默认容量(Bytes)
   default_subscribe_name: "免费版" # 默认订阅名称

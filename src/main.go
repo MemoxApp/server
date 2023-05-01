@@ -20,17 +20,17 @@ func main() {
 		log.Fatal("env CONFIG_FILE not set")
 	}
 	conf := config.MustReadConfigFile(configFile)
-
-	fmt.Printf("Memox Server Version: %s(%d) Build: %d\n", config.VersionName, config.VersionCode, config.Build)
 	if conf.Debug {
 		log.SetDev()
+		gin.SetMode(gin.TestMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	database, redis, err := db.InitDB(conf)
 	if err != nil {
-		log.Fatal("fail to start server: initDB error")
+		log.Fatal("启动服务失败，数据库连接失败")
+		log.Fatal(err.Error())
 		return
 	}
 
@@ -41,6 +41,31 @@ func main() {
 	}
 	r.Static("/resources", conf.Storage.Local.Folder+"/resources")
 	r.Any("/notify/bce", bce.Callback(conf.Storage.BCE, database.Collection("resource")))
+	fmt.Printf(`
+          _____                    _____                    _____                   _______                                 
+         /\    \                  /\    \                  /\    \                 /::\    \                ______          
+        /::\____\                /::\    \                /::\____\               /::::\    \              |::|   |         
+       /::::|   |               /::::\    \              /::::|   |              /::::::\    \             |::|   |         
+      /:::::|   |              /::::::\    \            /:::::|   |             /::::::::\    \            |::|   |         
+     /::::::|   |             /:::/\:::\    \          /::::::|   |            /:::/~~\:::\    \           |::|   |         
+    /:::/|::|   |            /:::/__\:::\    \        /:::/|::|   |           /:::/    \:::\    \          |::|   |         
+   /:::/ |::|   |           /::::\   \:::\    \      /:::/ |::|   |          /:::/    / \:::\    \         |::|   |         
+  /:::/  |::|___|______    /::::::\   \:::\    \    /:::/  |::|___|______   /:::/____/   \:::\____\        |::|   |         
+ /:::/   |::::::::\    \  /:::/\:::\   \:::\    \  /:::/   |::::::::\    \ |:::|    |     |:::|    | ______|::|___|___ ____ 
+/:::/    |:::::::::\____\/:::/__\:::\   \:::\____\/:::/    |:::::::::\____\|:::|____|     |:::|    ||:::::::::::::::::|    |
+\::/    / ~~~~~/:::/    /\:::\   \:::\   \::/    /\::/    / ~~~~~/:::/    / \:::\    \   /:::/    / |:::::::::::::::::|____|
+ \/____/      /:::/    /  \:::\   \:::\   \/____/  \/____/      /:::/    /   \:::\    \ /:::/    /   ~~~~~~|::|~~~|~~~      
+             /:::/    /    \:::\   \:::\    \                  /:::/    /     \:::\    /:::/    /          |::|   |         
+            /:::/    /      \:::\   \:::\____\                /:::/    /       \:::\__/:::/    /           |::|   |         
+           /:::/    /        \:::\   \::/    /               /:::/    /         \::::::::/    /            |::|   |         
+          /:::/    /          \:::\   \/____/               /:::/    /           \::::::/    /             |::|   |         
+         /:::/    /            \:::\    \                  /:::/    /             \::::/    /              |::|   |         
+        /:::/    /              \:::\____\                /:::/    /               \::/____/               |::|   |         
+        \::/    /                \::/    /                \::/    /                 ~~                     |::|___|         
+         \/____/                  \/____/                  \/____/                                          ~~
+
+`)
+	log.Info(fmt.Sprintf("Memox [Version] %s(%d) [Build] %d", config.VersionName, config.VersionCode, config.Build))
 	err = r.Run()
 	if err != nil {
 		panic(err)
