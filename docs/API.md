@@ -1,9 +1,5 @@
 # API 文档
 
-## 已知问题
-
-- 修改话题后不会同步修改Memory的原话题引用
-
 ## 接口信息
 
 ### Endpoint
@@ -26,10 +22,11 @@ https://memox.runs.fun/play
 https://memox.runs.fun/notify/bce
 ```
 
-## Account
+## 账户
 
 ### 登录
 
+::: details  
 Query
 
 ```graphql
@@ -54,7 +51,11 @@ Input
 }
 ```
 
+:::
+
 ### 注册
+
+::: details
 
 Query
 
@@ -77,8 +78,11 @@ Input
 }
 ```
 
+:::
+
 ### 发送邮件
 
+::: details  
 Query
 
 ```graphql
@@ -98,8 +102,11 @@ Input
 }
 ```
 
+:::
+
 ### 找回密码
 
+::: details  
 Query
 
 ```graphql
@@ -120,10 +127,13 @@ Input
 }
 ```
 
-## Memory
+:::
+
+## 记忆
 
 ### 创建 Memory
 
+::: details  
 Query
 
 ```graphql
@@ -143,8 +153,11 @@ Input
 }
 ```
 
+:::
+
 ### 获取 Memory 详情
 
+::: details  
 Query
 
 ```graphql
@@ -177,8 +190,11 @@ Input
 }
 ```
 
+:::
+
 ### 获取 Memories
 
+::: details  
 Query
 
 ```graphql
@@ -217,8 +233,11 @@ Input
 }
 ```
 
+:::
+
 ### 获取指定话题下的 Memories
 
+::: details  
 Query
 
 ```graphql
@@ -258,8 +277,11 @@ Input
 }
 ```
 
+:::
+
 ### 更新 Memory
 
+::: details  
 Query
 
 ```graphql
@@ -281,8 +303,11 @@ Input
 }
 ```
 
+:::
+
 ### 归档 Memory
 
+::: details  
 Query
 
 ```graphql
@@ -300,8 +325,11 @@ Input
 }
 ```
 
+:::
+
 ### 删除 Memory
 
+::: details  
 Query
 
 ```graphql
@@ -318,9 +346,12 @@ Input
 }
 ```
 
+:::
+
 ## 历史记录
 
 历史记录仅保留最基础的文本信息，资源删除后无法通过历史记录恢复  
+::: details  
 Query
 
 ```graphql
@@ -359,9 +390,13 @@ Input
 }
 ```
 
+:::
+
 ## 标签
 
 ### 标签列表
+
+::: details
 
 Query
 
@@ -391,8 +426,11 @@ Input
 }
 ```
 
+:::
+
 ### 更新标签
 
+::: details  
 Query
 
 ```graphql
@@ -414,9 +452,12 @@ Input
 }
 ```
 
+:::
+
 ### 删除标签
 
 **仅已归档标签且无Memory引用的标签可被删除**  
+::: details  
 Query
 
 ```graphql
@@ -433,9 +474,13 @@ Input
 }
 ```
 
+:::
+
 ## 回复
 
 ### 新增回复
+
+::: details
 
 Query
 
@@ -457,7 +502,11 @@ Input
 }
 ```
 
+:::
+
 ### 更新回复
+
+::: details
 
 Query
 
@@ -480,9 +529,13 @@ Input
 }
 ```
 
+:::
+
 ### 删除回复
 
 **仅已归档回复可被删除**  
+::: details
+
 Query
 
 ```graphql
@@ -499,7 +552,11 @@ Input
 }
 ```
 
+:::
+
 ### 回复列表
+
+::: details
 
 Query
 
@@ -542,7 +599,11 @@ Input
 }
 ```
 
+:::
+
 ### 子回复列表
+
+::: details
 
 Query
 
@@ -585,9 +646,13 @@ Input
 }
 ```
 
+:::
+
 ## 用户
 
 ### 当前用户
+
+::: details
 
 Query
 
@@ -639,9 +704,13 @@ Input
 }
 ```
 
+:::
+
 ## 资源
 
 ### 获取资源列表
+
+::: details
 
 Query
 
@@ -676,9 +745,12 @@ Input
 }
 ```
 
+:::
+
 ### 删除资源
 
 只有没有Memory引用改资源时才可删除  
+::: details  
 Query
 
 ```graphql
@@ -695,9 +767,12 @@ Input
 }
 ```
 
+:::
+
 ### 获取文件上传 Token
 
 **有效时间** 60s  
+::: details  
 Query
 
 ```graphql
@@ -730,10 +805,13 @@ Output
 }
 ```
 
+:::
+
 ### 上传本地存储文件
 
 仅服务器配置 `storage_provider` 为 `local` 时可用  
-**请求类型** `multipart/form-data`
+**请求类型** `multipart/form-data`  
+::: details
 
 #### 请求参数
 
@@ -778,10 +856,13 @@ curl localhost:4000/graphql \
   -F 0=@a.png
 ```
 
-## 订阅相关
+:::
+
+## 订阅
 
 ### 查看所有可用订阅
 
+::: details  
 Query
 
 ```graphql
@@ -797,8 +878,11 @@ Query
 }
 ```
 
+:::
+
 ### 创建订阅
 
+::: details  
 Query
 
 ```graphql
@@ -819,8 +903,11 @@ Input
 }
 ```
 
+:::
+
 ### 更新订阅
 
+::: details  
 Query
 
 ```graphql
@@ -842,10 +929,13 @@ Input
 }
 ```
 
+:::
+
 ### 删除订阅
 
 当且仅当该订阅下的用户数为0时允许删除
 
+::: details  
 Query
 
 ```graphql
@@ -862,10 +952,13 @@ Input
 }
 ```
 
+:::
+
 ## 其他
 
 ### 服务器版本信息
 
+::: details  
 Query
 
 ```graphql
@@ -891,3 +984,5 @@ Output
   }
 }
 ```
+
+:::
