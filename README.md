@@ -25,10 +25,12 @@ Talk to memory, talk to time.
 11. 无设备限制
 12. 支持自托管
 
+# 快速开始
+请参阅 [memox.runs.fun/GET_STARTED.html](https://memox.runs.fun/GET_STARTED.html)
 
 # API 及开发文档
 
-详见 [docs/API.md](docs/API.md)
+请参阅 [memox.runs.fun/API.html](https://memox.runs.fun/API.html)
 
 # LICENSE
 
