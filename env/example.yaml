@@ -30,6 +30,7 @@ storage: # 存储配置
     end_point: "https://cdn.memox.runs.fun" # 如果直接使用存储桶此处填写存储桶Endpoint(协议头可选)：[http://|https://]<region>.bcebos.com
     bucket_name: "" # 如果通过CDN接入此处留空, 如果直接使用存储桶此处填写存储桶名称
     cdn: true # 是否通过CDN接入
+    cdn_auth_type: "C" # CDN鉴权类型，与CDN控制台鉴权类型一致，可选: A/B/C
     cdn_auth_key: "<鉴权密钥，与CDN控制台处填写的一致>" # CDN鉴权密钥（仅通过CDN接入时需要填写）
     region: "su" # 存储桶所在区域，CDN接入时也需要填写
     callback_token: "<回调鉴权密钥>" # 存储桶回调通知鉴权密钥，防止伪造请求

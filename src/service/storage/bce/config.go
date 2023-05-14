@@ -7,6 +7,7 @@ type Config struct {
 	BucketName      string `yaml:"bucket_name"`
 	Region          string `yaml:"region"`
 	CDN             bool   `yaml:"cdn"`
+	CdnAuthType     string `yaml:"cdn_auth_type"`
 	CdnAuthKey      string `yaml:"cdn_auth_key"`
 	CallbackToken   string `yaml:"callback_token"`
 }

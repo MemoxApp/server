@@ -173,10 +173,15 @@ storage: # 存储配置
     secret_access_key: "<SecretAccessKey>" # 百度云SecretAccessKey
     end_point: "https://cdn.ts.example.com" # CDN 加速地址，必须包含协议头
     cdn: true # 是否通过CDN接入
+    cdn_auth_type: "C" # CDN鉴权类型，与CDN控制台鉴权类型一致，可选: A/B/C
     cdn_auth_key: "<鉴权密钥，与CDN控制台处填写的一致>" # CDN鉴权密钥
     region: "su" # 存储桶所在区域
     callback_token: "<回调鉴权密钥>" # 存储桶回调通知鉴权密钥，防止伪造请求
 ```
+
+:::warn  
+由于 CDN **类型B** 鉴权方式会改变原有路径会导致客户端缓存失效，每次刷新都会重新从CDN下载资源产生大量的流量，非常不推荐使用  
+:::
 
 ##### 创建存储桶事件通知
 
@@ -188,7 +193,7 @@ CDN 配置 > 访问控制 > 高级鉴权
 |名称|配置|
 |-----|-----|
 |鉴权配置| **开启**|  
-|类型选择|**类型B**|  
+|类型选择|**与配置文件中cdn_auth_type保持一致**|  
 |主KEY| **配置文件中配置的鉴权密钥cdn_auth_key**|  
 |备KEY|留空|  
 |时间格式| **十进制**|  

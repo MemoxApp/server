@@ -2,10 +2,12 @@ package bce
 
 import (
 	"context"
+	"errors"
 	"github.com/baidubce/bce-sdk-go/services/bos"
 	"github.com/baidubce/bce-sdk-go/services/sts"
 	"memox_server/src/service/storage/utils"
 	"memox_server/src/service/user"
+	"strings"
 )
 
 type BCE struct {
@@ -58,8 +60,17 @@ func (b *BCE) GetUrl(ctx context.Context, path string) (string, error) {
 	p := utils.GenerateResourcePath(userId.Hex(), path)
 	if b.Config.CDN {
 		// 生成CDN下载地址,有效时间在CDN控制台配置
-		u := SignUrl(b.Config.EndPoint, p, b.Config.CdnAuthKey)
-		return u, nil
+		if strings.ToLower(b.Config.CdnAuthType) == "a" {
+			u := SignUrlTypeA(b.Config.EndPoint, p, userId.Hex(), b.Config.CdnAuthKey)
+			return u, nil
+		} else if strings.ToLower(b.Config.CdnAuthType) == "b" {
+			u := SignUrlTypeB(b.Config.EndPoint, p, b.Config.CdnAuthKey)
+			return u, nil
+		} else if strings.ToLower(b.Config.CdnAuthType) == "c" {
+			u := SignUrlTypeC(b.Config.EndPoint, p, b.Config.CdnAuthKey)
+			return u, nil
+		}
+		return "", errors.New("no specified cdn auth type")
 	} else {
 		// 生成对象存储下载地址,有效时间 30 min
 		u := b.Bos.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
