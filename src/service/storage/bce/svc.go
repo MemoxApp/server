@@ -5,9 +5,11 @@ import (
 	"errors"
 	"github.com/baidubce/bce-sdk-go/services/bos"
 	"github.com/baidubce/bce-sdk-go/services/sts"
+	"memox_server/src/log"
 	"memox_server/src/service/storage/utils"
 	"memox_server/src/service/user"
 	"strings"
+	"time"
 )
 
 type BCE struct {
@@ -37,10 +39,11 @@ func (b *BCE) GetToken(ctx context.Context, fileName string) (*utils.UploadToken
 		return nil, err
 	}
 	// 生成上传凭证
-	aclString := b.getWritePermissionACL(userId.Hex(), fileName)
+	aclString := b.getWritePermissionACL(userId.Hex(), fileName, b.Config.BucketName)
 	absPath := utils.GenerateResourcePath(userId.Hex(), fileName)
 	sessionToken, err := b.Sts.GetSessionToken(60, aclString)
 	if err != nil {
+		log.Error("GetSessionToken Error, Time:" + time.Now().String() + ", error:" + err.Error())
 		return nil, err
 	}
 	return &utils.UploadTokenPayload{

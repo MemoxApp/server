@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-func (b *BCE) getWritePermissionACL(userID, filename string) string {
+func (b *BCE) getWritePermissionACL(userID, filename, bucketName string) string {
 	return ` {
   "accessControlList": [
    {   
     "service":"bce:bos",
     "region":"` + b.Config.Region + `",
     "effect": "Allow",
-    "resource": ["` + utils.GenerateResourcePath(userID, filename) + `"],
+    "resource": ["` + bucketName + "/" + utils.GenerateResourcePath(userID, filename) + `"],
     "permission": ["WRITE"]
     }
    ]
