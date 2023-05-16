@@ -14,22 +14,13 @@ import (
 
 type BCE struct {
 	Config Config
-	Bos    *bos.Client
-	Sts    *sts.Client
 }
 
 // NewBCESvc 创建BCE服务
 func NewBCESvc(config Config) *BCE {
 	// 创建BOS服务的Client
-	bosClient, err := bos.NewClient(config.AccessKeyID, config.SecretAccessKey, config.EndPoint)
-	client, err := sts.NewClient(config.AccessKeyID, config.SecretAccessKey)
-	if err != nil {
-		return nil
-	}
 	return &BCE{
 		Config: config,
-		Bos:    bosClient,
-		Sts:    client,
 	}
 }
 
@@ -41,7 +32,8 @@ func (b *BCE) GetToken(ctx context.Context, fileName string) (*utils.UploadToken
 	// 生成上传凭证
 	aclString := b.getWritePermissionACL(userId.Hex(), fileName, b.Config.BucketName)
 	absPath := utils.GenerateResourcePath(userId.Hex(), fileName)
-	sessionToken, err := b.Sts.GetSessionToken(60, aclString)
+	client, err := sts.NewClient(b.Config.AccessKeyID, b.Config.SecretAccessKey)
+	sessionToken, err := client.GetSessionToken(60, aclString)
 	if err != nil {
 		log.Error("GetSessionToken Error, Time:" + time.Now().String() + ", error:" + err.Error())
 		return nil, err
@@ -76,7 +68,11 @@ func (b *BCE) GetUrl(ctx context.Context, path string) (string, error) {
 		return "", errors.New("no specified cdn auth type")
 	} else {
 		// 生成对象存储下载地址,有效时间 30 min
-		u := b.Bos.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
+		bosClient, err := bos.NewClient(b.Config.AccessKeyID, b.Config.SecretAccessKey, b.Config.EndPoint)
+		if err != nil {
+			return "", err
+		}
+		u := bosClient.BasicGeneratePresignedUrl(b.Config.BucketName, p, 1800)
 		return u, nil
 	}
 }
@@ -88,7 +84,11 @@ func (b *BCE) Delete(ctx context.Context, path string) (bool, error) {
 	}
 	p := utils.GenerateResourcePath(userId.Hex(), path)
 	// 删除文件
-	err = b.Bos.DeleteObject(b.Config.BucketName, p)
+	bosClient, err := bos.NewClient(b.Config.AccessKeyID, b.Config.SecretAccessKey, b.Config.EndPoint)
+	if err != nil {
+		return false, err
+	}
+	err = bosClient.DeleteObject(b.Config.BucketName, p)
 	if err != nil {
 		return false, err
 	}
