@@ -34,6 +34,8 @@ type Resource {
 type UploadTokenPayload {
     "唯一资源标识"
     id: ID!
+    "资源是否已存在，已存在直接使用id即可"
+    exist: Boolean!
     "用于STS凭证访问的AK"
     access_key: String!
     "用于STS凭证访问的SK"

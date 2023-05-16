@@ -67,7 +67,7 @@ func (s *Svc) NewResource(ctx context.Context, path string, size int64) (string,
 	}
 	if exist != nil {
 		if exist.Size > 0 {
-			return "", exception.ErrResourceExist
+			return exist.ObjectID.Hex(), exception.ErrResourceExist
 		} else {
 			// 创建了但未使用的资源
 			return exist.ObjectID.Hex(), nil

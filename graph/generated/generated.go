@@ -183,6 +183,7 @@ type ComplexityRoot struct {
 
 	UploadTokenPayload struct {
 		AccessKey       func(childComplexity int) int
+		Exist           func(childComplexity int) int
 		FileName        func(childComplexity int) int
 		ID              func(childComplexity int) int
 		SecretAccessKey func(childComplexity int) int
@@ -1052,6 +1053,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UploadTokenPayload.AccessKey(childComplexity), true
 
+	case "UploadTokenPayload.exist":
+		if e.complexity.UploadTokenPayload.Exist == nil {
+			break
+		}
+
+		return e.complexity.UploadTokenPayload.Exist(childComplexity), true
+
 	case "UploadTokenPayload.file_name":
 		if e.complexity.UploadTokenPayload.FileName == nil {
 			break
@@ -1504,6 +1512,8 @@ type Resource {
 type UploadTokenPayload {
     "唯一资源标识"
     id: ID!
+    "资源是否已存在，已存在直接使用id即可"
+    exist: Boolean!
     "用于STS凭证访问的AK"
     access_key: String!
     "用于STS凭证访问的SK"
@@ -4946,6 +4956,8 @@ func (ec *executionContext) fieldContext_Mutation_getToken(ctx context.Context, 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_UploadTokenPayload_id(ctx, field)
+			case "exist":
+				return ec.fieldContext_UploadTokenPayload_exist(ctx, field)
 			case "access_key":
 				return ec.fieldContext_UploadTokenPayload_access_key(ctx, field)
 			case "secret_access_key":
@@ -7496,6 +7508,50 @@ func (ec *executionContext) fieldContext_UploadTokenPayload_id(ctx context.Conte
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadTokenPayload_exist(ctx context.Context, field graphql.CollectedField, obj *utils.UploadTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadTokenPayload_exist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Exist, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadTokenPayload_exist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11890,6 +11946,13 @@ func (ec *executionContext) _UploadTokenPayload(ctx context.Context, sel ast.Sel
 		case "id":
 
 			out.Values[i] = ec._UploadTokenPayload_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "exist":
+
+			out.Values[i] = ec._UploadTokenPayload_exist(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++

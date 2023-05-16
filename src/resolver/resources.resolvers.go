@@ -63,15 +63,22 @@ func (r *mutationResolver) GetToken(ctx context.Context, fileName string) (*util
 	if used > subscribe.Capacity {
 		return nil, exception.ErrResourceSizeLimit
 	}
+	res, err := r.resourceSvc.NewResource(ctx, newFileName, 0)
+	if err != nil {
+		if err == exception.ErrResourceExist {
+			return &utils.UploadTokenPayload{
+				ID:    res,
+				Exist: true,
+			}, nil
+		}
+		return nil, err
+	}
 	token, err := r.storageSvc.GetToken(ctx, newFileName)
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.resourceSvc.NewResource(ctx, newFileName, 0)
-	if err != nil {
-		return nil, err
-	}
 	token.ID = res
+	token.Exist = false
 	return token, nil
 }
 
